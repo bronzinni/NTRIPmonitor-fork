@@ -29,7 +29,7 @@ from sys import exit
 from time import time, sleep
 from dotenv import load_dotenv
 
-from databasehandling import NtripObservationHandler, NtripLogHandler
+from databasehandling import DatabaseHandler, NtripObservationHandler, NtripLogHandler
 import asyncpg
 from ntripclient import NtripClients
 from settings import CasterSettings, DbSettings, MultiprocessingSettings
@@ -414,22 +414,21 @@ async def downloadSourceTable(
     fail: int = 0,
     retry: int = 3,
 ) -> list[list[str]]:
-    """Reads the sourcetable and inserts relevant metadata for the mountpoints
-    into the database. Done for efficient viewing and handling of metadata when
-    visualizing the data.
+    """Reads the sourcetable and inserts relevant metadata for the requested mountpoints into the database.
     """
     # Create an instance of NtripStream
     ntripclient = NtripClients()
     mountpoints = []
     casterStatus = [0] * len(casterSettingsDict)  # Initialize the list with zeros
 
-    for g, (caster, casterSettings) in enumerate(casterSettingsDict.items(), start=1):
+    for g, (caster, casterSettings) in enumerate(casterSettingsDict.items()):
         if caster == "Empty":
-            logging.info(f"Skipping caster {g}: {caster}.")
+            logging.info(f"Skipping caster: {caster}.")
             continue
         logging.info(
             f"Requesting source table from caster {caster} for mountpoint information at {casterSettings.casterUrl}"
         )
+        
         while True:
             try:
                 sourceTable = await ntripclient.requestSourcetable(
@@ -439,14 +438,13 @@ async def downloadSourceTable(
                 for row in sourceTable:
                     sourceCols = row.split(sep=";")
                     # If the row represents a stream (STR), add the mountpoint to the list
-                    if sourceCols[0] == "STR":
+                    if sourceCols[0] == "STR" and sourceCols[1] in casterSettings.mountpoints:
                         mountpoints.append(
-                            [sourceCols[1], caster]
-                            + [sourceCols[i] for i in [2, 3, 8, 9, 10, 13]]
+                            [sourceCols[i] for i in [1, 2, 8, 9, 10, 13, 3]]
                         )
-                casterStatus[g - 1] = 1  # Set the status to 1 if the caster is active
+                casterStatus[g] = 1  # Set the status to 1 if the caster is active
                 logging.info(
-                    f"Found {len(mountpoints)} mountpoints in the source table."
+                    f"Extracted {len(mountpoints)} mountpoints from the source table."
                 )
                 break  # If the source table is successfully received, break the loop
             except Exception as error:
@@ -464,21 +462,45 @@ async def downloadSourceTable(
                         f" Attempted to connect to {casterSettings.casterUrl} {retry} times without success. Skipping caster."
                     )
                     break
-    seenMountpoints = {}
-    for mountpoint in mountpoints:
-        if mountpoint[0] in seenMountpoints:
-            logging.info("Warning : Duplicate mountpoint found.")
-            logging.info(
-                f"Duplicate mountpoint found: Name - {mountpoint[0]}, Caster - {mountpoint[1]}, Location - {mountpoint[2]}, Country Code - {mountpoint[4]}"
-            )
-            logging.info(
-                f"Original mountpoint: Name - {seenMountpoints[mountpoint[0]][0]}, Caster - {seenMountpoints[mountpoint[0]][1]}, Location - {seenMountpoints[mountpoint[0]][2]}, Country Code - {seenMountpoints[mountpoint[0]][4]}"
-            )
-        else:
-            seenMountpoints[mountpoint[0]] = mountpoint
+
+    # CBH: write casters to database, this should be a context manager...
     while True:
         try:
-            dbConnection = await dbConnect(dbSettings)
+            dbConnection = await DatabaseHandler.dbConnect(dbSettings)
+            break  # If the operation is successful and fail is less than retry, break the loop
+        # except (Exception, asyncpg.ConnectionError) as error:
+        except Exception as error:
+            fail += 1
+            sleepTime = 5 * fail
+            if sleepTime > 300:
+                sleepTime = 300
+            logging.error(
+                "Failed to connect to database server: "
+                f"{dbSettings.database}@{dbSettings.host} "
+                f"with error: {error}"
+            )
+            if dbConnection:
+                await dbConnection.close()
+            await asyncio.sleep(sleepTime)
+    logging.info(f"Connected to database: {dbSettings.database}@{dbSettings.host}.")
+
+    
+    # CBH: Not sure why we bother too much with this?
+    # seenMountpoints = {}
+    # for mountpoint in mountpoints:
+    #     if mountpoint[0] in seenMountpoints:
+    #         logging.info("Warning : Duplicate mountpoint found.")
+    #         logging.info(
+    #             f"Duplicate mountpoint found: Name - {mountpoint[0]}, Caster - {mountpoint[1]}, Location - {mountpoint[2]}, Country Code - {mountpoint[4]}"
+    #         )
+    #         logging.info(
+    #             f"Original mountpoint: Name - {seenMountpoints[mountpoint[0]][0]}, Caster - {seenMountpoints[mountpoint[0]][1]}, Location - {seenMountpoints[mountpoint[0]][2]}, Country Code - {seenMountpoints[mountpoint[0]][4]}"
+    #         )
+    #     else:
+    #         seenMountpoints[mountpoint[0]] = mountpoint
+    while True:
+        try:
+            dbConnection = await DatabaseHandler.dbConnect(dbSettings)
             break  # If the operation is successful and fail is less than retry, break the loop
         # except (Exception, asyncpg.ConnectionError) as error:
         except Exception as error:
@@ -498,7 +520,7 @@ async def downloadSourceTable(
     mountpointJson = json.dumps(mountpoints)
     try:
         await dbConnection.execute(
-            f"SELECT insert_sourcetable_constants($1::json)",
+            f"SELECT insert_mountpoints($1::json)",
             mountpointJson,
         )
     except Exception as e:
@@ -540,39 +562,6 @@ def loadCasterSettings():
             # Create a CasterSettings object and add it to the dictionary
             casterSettingsDict[caster_id] = casterInstance
     return casterSettingsDict
-
-
-async def dbConnect(dbSettings: DbSettings):
-    """
-    Establishes a connection to the database using the provided settings.
-
-    Parameters:
-    dbSettings (DbSettings): An instance of DbSettings containing the database connection details.
-
-    Returns:
-    connection: A connection object that represents the database connection.
-    """
-    connection = await asyncpg.connect(
-        user=dbSettings.user,
-        password=dbSettings.password,
-        host=dbSettings.host,
-        port=dbSettings.port,
-        database=dbSettings.database,
-    )
-    return connection
-
-
-async def waitDbConnection(dbSettings: DbSettings):
-    while True:
-        try:
-            dbConnection = await dbConnect(dbSettings)
-            await dbConnection.close()
-            sleep(1)
-            break
-        except Exception as error:
-            logging.info("Database connection is not yet open. Waiting...")
-            sleep(3)
-    logging.info("Database is initialized. Initializing the monitor system.")
 
 
 def initializationLogger(
@@ -772,11 +761,6 @@ def RunMultiProcessing(
             decodingProcess.join()
 
 
-def runSingleProcessing(casterSettingsDict: dict, dbSettings: DbSettings):
-    # Code removed from current release. will be added back late June.
-    return None
-
-
 def main(
     casterSettingsDict: dict,
     dbSettings: DbSettings,
@@ -789,15 +773,12 @@ def main(
     casterSettings (CasterSettings): An instance of CasterSettings containing the caster settings.
     dbSettings (DbSettings): An instance of DbSettings containing the database connection details.
     """
-    while True:
-        try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(waitDbConnection(dbSettings))
-            sleep(5)
-            break
-        except Exception as error:
-            sleep(3)
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    # cannot continue until database connection is established
+    loop.run_until_complete(DatabaseHandler.waitDbConnection(dbSettings))
 
     initializationLogger(
         casterSettingsDict, dbSettings, processingSettings
@@ -818,7 +799,9 @@ def main(
     # reduce caster dictionary to contain only active casters
     casterSettingsDict = reduceCasterDict(casterSettingsDict, casterStatus)
 
-    if processingSettings.multiprocessingActive:
+    # Always run multiprocessing
+    # if processingSettings.multiprocessingActive:
+    if True:
         RunMultiProcessing(casterSettingsDict, dbSettings, processingSettings)
     else:
         runSingleProcessing(casterSettingsDict, dbSettings)

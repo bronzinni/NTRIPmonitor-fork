@@ -43,17 +43,36 @@ class DatabaseHandler:
             await self.pool.release(connection)
 
     @staticmethod
-    async def waitDbConnection(dbSettings):
+    async def dbConnect(dbSettings: DbSettings):
+        """
+        Establishes a connection to the database using the provided settings.
+
+        Parameters:
+        dbSettings (DbSettings): An instance of DbSettings containing the database connection details.
+
+        Returns:
+        connection: A connection object that represents the database connection.
+        """
+        connection = await asyncpg.connect(
+            user=dbSettings.user,
+            password=dbSettings.password,
+            host=dbSettings.host,
+            port=dbSettings.port,
+            database=dbSettings.database,
+        )
+        return connection
+
+    @staticmethod
+    async def waitDbConnection(dbSettings, sleepTime: int = 3):
         while True:
             try:
                 dbConnection = await DatabaseHandler.dbConnect(dbSettings)
                 await dbConnection.close()
-                sleep(1)
                 break
             except Exception as error:
-                logging.info("Database connection is not yet open. Waiting...")
-                sleep(3)
-        logging.info("Database is initialized. Initializing the monitor system.")
+                logging.info(f"Database connection is not yet open. Returns: {error}. Trying in {sleepTime} seconds...")
+                sleep(sleepTime)
+        logging.info("Database initialized.  the monitor system.")
 
 
 class NtripObservationHandler(DatabaseHandler):
@@ -178,7 +197,7 @@ class NtripObservationHandler(DatabaseHandler):
             connection = await self.getConnection()
             try:
                 rtcmPackageIds = await connection.fetchval(
-                    "SELECT insert_rtcm_packages($1::json)", decodedFramesJson
+                    "SELECT insert_rtcm_messages($1::json)", decodedFramesJson
                 )
             finally:
                 await self.releaseConnection(connection)
