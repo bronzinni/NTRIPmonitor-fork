@@ -15,14 +15,14 @@ from __version__ import __version__
 
 TIMEOUT_READ_STREAM = 10.0
 
-
+# CBH: to ensure closing connections correctly, this ought to be an asynchronous context manager 
 class NtripClients:
     RTCM3FRAMEPREAMPLE = Bits(bin="0b11010011")
     RTCM3FRAMEHEADERFORMAT = "bin:8, pad:6, uint:10"
 
     def __init__(self):
         self.__CLIENTVERSION = __version__
-        self.__CLIENTNAME = f"NtripMonitor {self.__CLIENTVERSION}"
+        self.__CLIENTNAME = f"NTRIPmonitor {self.__CLIENTVERSION}"
         self.casterUrl = None
         self.ntripWriter = None
         self.ntripReader = None
@@ -85,6 +85,13 @@ class NtripClients:
             "Ready to write."
         )
         return True
+
+    async def closeNtripConnection(self) -> None:
+        """
+        Closes connection to a caster.
+        """
+        self.ntripWriter.close()
+        await self.ntripWriter.wait_closed()
 
     def setRequestSourceTableHeader(self, casterUrl: str) -> None:
         """
@@ -304,7 +311,7 @@ class NtripClients:
         else:
             self.ntripResponseStatusCode = 0
 
-    def ntripResponseStatusOk(self) -> bool:
+    async def ntripResponseStatusOk(self) -> bool:
         """
 
 
@@ -333,7 +340,7 @@ class NtripClients:
             raise ConnectionError(
                 f"{self.ntripMountPoint}: {self.ntripResponseHeader[0]}"
             )
-            self.ntripWriter.close()
+            await self.closeNtripConnection()
             return False
 
     async def sendRequestHeader(self) -> None:
@@ -352,7 +359,7 @@ class NtripClients:
             logging.debug(f"TCP request: {line}")
         logging.info(f"{self.ntripMountPoint}: Request sent.")
         await self.getNtripResponseHeader()
-        if self.ntripResponseStatusOk():
+        if await self.ntripResponseStatusOk():
             for line in self.ntripResponseHeader:
                 logging.debug(f"TCP response: {line}")
 
@@ -385,7 +392,7 @@ class NtripClients:
                 line = await self.ntripReader.readline()
             except (asyncio.IncompleteReadError, asyncio.LimitOverrunError) as error:
                 raise ConnectionError(
-                    f"Connection to {self.casterUrl} failed with: {error}"
+                    f"Connection to {self.casterUrl} failed with: {error}."
                 ) from None
 
             if not line:
@@ -393,12 +400,12 @@ class NtripClients:
             line = line.decode("ISO-8859-1").rstrip()
             if line == "ENDSOURCETABLE":
                 ntripSourcetable.append(line)
-                self.ntripWriter.close()
-                logging.info("Source table received.")
                 break
             else:
                 ntripSourcetable.append(line)
+        await self.closeNtripConnection()
         return ntripSourcetable
+
 
     async def requestNtripServer(
         self,

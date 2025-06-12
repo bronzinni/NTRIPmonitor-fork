@@ -9,7 +9,7 @@ from ntripclient import NtripClients
 
 
 class DatabaseHandler:
-    def __init__(self, dbSettings):
+    def __init__(self, dbSettings = DbSettings):
         self.dbSettings = dbSettings
         self.pool = None
 
@@ -27,7 +27,8 @@ class DatabaseHandler:
                 )
                 break
             except Exception as error:
-                logging.error(f"Failed to create connection pool with: {error}")
+                logging.error(f"Failed to create connection pool with: {error}.")
+                await asyncio.sleep(5)
 
     async def closePool(self):
         if self.pool:
@@ -74,6 +75,42 @@ class DatabaseHandler:
                 sleep(sleepTime)
         logging.info("Database initialized.  the monitor system.")
 
+class DatabaseConnection():
+    def __init__(self, dbSettings: DbSettings, sleepTime: int = 5, tries: int = 10):
+         self.dbSettings = dbSettings
+         self.sleepTime = sleepTime
+         self.tries = tries       
+        # FUTURE: we want a connection pool
+        # self.pool = None
+
+    async def __aenter__(self):
+        fails = 0
+        while True:
+            try:
+                self.dbConnection = await DatabaseHandler.dbConnect(self.dbSettings)
+                break  # If the operation is successful break the loop
+            except Exception as error:
+                fails += 1
+                logging.error(
+                    f"""Failed ({fails}) to connect to database server:
+                    {self.dbSettings.database}@{self.dbSettings.host}
+                    with error: {error}. Trying in {self.sleepTime} seconds."""
+                )
+                if fails >= self.tries:
+                    raise ConnectionError
+                await asyncio.sleep(self.sleepTime)
+        logging.info(f"Connected to database: {self.dbSettings.database}@{self.dbSettings.host}.")
+
+        return self
+    
+    async def fetchval(self, query: str, json_string: str):
+        return await self.dbConnection.fetchval(query, json_string)
+
+    async def execute(self, query: str, json_string: str):
+        return await self.dbConnection.execute(query, json_string)
+
+    async def __aexit__(self, exc_t, exc_v, exc_tb):
+        await self.dbConnection.close()
 
 class NtripObservationHandler(DatabaseHandler):
     INPUTTABLE = {
@@ -147,7 +184,7 @@ class NtripObservationHandler(DatabaseHandler):
         1127: "insert_beidou_observations",
     }
 
-    def __init__(self, dbSettings):
+    def __init__(self, dbSettings = DbSettings):
         super().__init__(dbSettings)
 
     async def grabStoredProcedure(msgType: int):
@@ -206,6 +243,8 @@ class NtripObservationHandler(DatabaseHandler):
                 f"Failed to insert and commit RTCM data to database with: {error}."
             )
             rtcmPackageIds = None
+
+        rtcmPackageIds = None
         return rtcmPackageIds
 
     async def dbInsertBatch(

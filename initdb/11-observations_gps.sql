@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS observations_gps (
     obs_id BIGSERIAL,
-    rtcm_id BIGINT REFERENCES rtcm_messages(rtcm_id) ON DELETE CASCADE,
+    rtcm_id BIGINT, -- REFERENCES rtcm_messages(rtcm_id) ON DELETE CASCADE,
+    obs_epoch TIMESTAMPTZ,
     sat_id CHAR(4),
     sat_signal CHAR(3),
     obs_code NUMERIC(13, 10),
@@ -10,6 +11,3 @@ CREATE TABLE IF NOT EXISTS observations_gps (
     obs_lock_time_indicator INTEGER,
     PRIMARY KEY (obs_id, rtcm_id)
 );
-
-SELECT drop_chunks('observations_gps', older_than => INTERVAL '2 months');
-SELECT add_retention_policy('observations_gps', INTERVAL '2 months');

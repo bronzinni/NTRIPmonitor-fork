@@ -1,9 +1,7 @@
-version: "2.4"
-
 services:
 
     timescaledb:
-        image: timescale/timescaledb:latest-pg14
+        image: timescale/timescaledb:latest-pg17
         env_file:
             - .env
         user: ${DB_USER}
@@ -16,7 +14,7 @@ services:
             - TS_TUNE_MEMORY=${DB_MEMORY}
             - TS_TUNE_MAX_CONNS=400
         ports:
-            - "5432:5432"
+            - "9090:5432"
         volumes:
             - ./initdb/01-casters.sql:/docker-entrypoint-initdb.d/01-casters.sql
             - ./initdb/02-mountpoints.sql:/docker-entrypoint-initdb.d/02-mountpoints.sql

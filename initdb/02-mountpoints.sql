@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS mountpoints (
     mountpoint_id SERIAL PRIMARY KEY,
-    caster_id INT REFERENCES casters(caster_id) ON DELETE CASCADE,
+    caster_id INT, -- REFERENCES casters(caster_id) ON DELETE CASCADE,
     sitename VARCHAR(50),
     city VARCHAR(50),
     countrycode VARCHAR(50),

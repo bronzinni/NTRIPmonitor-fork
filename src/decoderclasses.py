@@ -12,10 +12,10 @@ from rtcm3 import Rtcm3
 class Decoder(ABC):
     def __init__(self,params):
         self.params = params
-        self.data = params.get('data',None)
+        self.data = params.get('data', None)
 
     @staticmethod
-    def gnssEpochStr(messageType: int, obsEpoch: float, Type: int) -> str:
+    def gnssEpochStr(messageType: int, obsEpoch: float, use_stored_procedure: bool = True) -> str:
         # Get the current time in seconds since the epoch
         now = time()
         # Calculate the number of seconds that have passed today
@@ -26,13 +26,14 @@ class Decoder(ABC):
         # Calculate the number of seconds that have passed on the day of the observation
         obsSecOfDay = int(obsEpoch % 86400)
         # Calculate the microseconds part of the observation epoch
-        us = int(obsEpoch % 1 * 1000000)
+        microseconds = int(obsEpoch % 1 * 1000000)
 
         # If the observation time is more than 5 hours behind the current time, assume it's from the next day
         if (obsSecOfDay - nowSecOfDay) < -5 * 3600:
             obsTime = nowSecOfDate + obsSecOfDay + 86400
         else:
             obsTime = nowSecOfDate + obsSecOfDay
+
         # If the message type indicates that the observation is from a GLONASS satellite, adjust the time by -3 hours
         if (messageType >= 1009 and messageType <= 1012) or (
             messageType >= 1081 and messageType <= 1087
@@ -40,15 +41,15 @@ class Decoder(ABC):
             obsTime = obsTime - 3 * 3600
         # Log the message type, current time, observation time, and time difference
         logging.debug(
-            f"Msg:{messageType} CPU:{strftime(f'%Y-%m-%d %H:%M:%S.{us} z', gmtime(now))} "
-            f"obsTime:{strftime(f'%Y-%m-%d %H:%M:%S.{us} z', gmtime(obsTime))} "
+            f"Msg:{messageType} CPU:{strftime(f'%Y-%m-%d %H:%M:%S.{microseconds} z', gmtime(now))} "
+            f"obsTime:{strftime(f'%Y-%m-%d %H:%M:%S.{microseconds} z', gmtime(obsTime))} "
             f"timeDiff:{obsSecOfDay - nowSecOfDay}"
         )
-        # Convert the observation time to a string in the format "YYYY-MM-DD HH:MM:SS.us Z"
-        if Type == 1:  # With stored procedure
-            epochStr = strftime(f"%Y-%m-%d %H:%M:%S.{us} z", gmtime(obsTime))
-        else:  # Without stored procedure
-            epochStr = datetime.fromtimestamp(obsTime).replace(microsecond=us)
+        # Convert the observation time to a string in the format "YYYY-MM-DD HH:MM:SS.microseconds Z"
+        if use_stored_procedure:  # With stored procedure
+            epochStr = strftime(f"%Y-%m-%d %H:%M:%S.{microseconds} z", gmtime(obsTime))
+        else: # Without stored procedure
+            epochStr = datetime.fromtimestamp(obsTime).replace(microsecond=microseconds)
         return epochStr
 
 
@@ -77,7 +78,7 @@ class Decoder(ABC):
             logging.error(f"Failed to decode RTCM frame with error: {error}")
             return None, None
         decodedFrame = Decoder.rtcmSimpleMetadata(params)
-        decoderClass = None
+        # decoderClass = None
         decodedObs = None
         # logging.info(params['messageType'])
         if storeObsCheck:
@@ -100,27 +101,25 @@ class Decoder(ABC):
     @staticmethod
     def rtcmSimpleMetadata(params: dict):
         try:
+            # CBH: We are getting rid of message specific columns in the rtcm_messages table
             if params['messageType'] >= 1071 and params['messageType'] <= 1127:
                 satCount = len(params['data'][1])
-                obsEpochStr = Decoder.gnssEpochStr(params['messageType'], params['data'][0][2] / 1000.0, 1)
+                obsEpochStr = Decoder.gnssEpochStr(params['messageType'], params['data'][0][2] / 1000.0)
             else:
-                satCount = None
-                obsEpochStr = None
-            decodedFrame = (
-                params['mountPoint'],
-                strftime(
+                pass
+            decodedFrame = {
+                "mountpoint_id": params['mountPoint'],
+                "time_received": strftime(
                     f"%Y-%m-%d %H:%M:%S.{int(params['timeStampInFrame'] % 1 * 1000000):06}",
                     gmtime(params['timeStampInFrame']),
                 ),
-                obsEpochStr,
-                params['messageType'],
-                params['messageSize'],
-                satCount,
-            )
+                "msg_type": params['messageType'],
+                "msg_size": params['messageSize']
+            }
         except Exception as error:
             logging.info(f"Failed to decode simple metadata {params['messageType']}: {error}")
         return decodedFrame
-    
+
 
     @abstractmethod
     def decode(self):
@@ -157,11 +156,11 @@ class DecoderPOS(Decoder):
                                z,
                                antHgt])
         except Exception as error:
-            logging.error(f"Failed to decode ARP message {self.messageType} with error: {error}. Setting observation to None")
+            logging.error(f"Failed to decode ARP message {self.messageType} with error: {error}. Setting observation to None.")
             self.decodedObs = None
         
         return {"decodedObs": self.decodedObs}
-        
+
 
 class DecoderMSM(Decoder):
     def __init__(self, params):
@@ -191,10 +190,8 @@ class DecoderMSM(Decoder):
                 case 112:
                     constellation_id = "C"
 
-
-
             if self.messageType >= 1071 and self.messageType <= 1127:
-                obsEpochStr = Decoder.gnssEpochStr(self.messageType, self.data[0][2] / 1000.0, 1)
+                obsEpochStr = Decoder.gnssEpochStr(self.messageType, self.data[0][2] / 1000.0)
                 satSignals = rtcmmessage.msmSignalTypes(self.messageType, self.data[0][10])
                 signalCount = len(satSignals)
                 availSatMask = str(self.data[0][9])
