@@ -161,7 +161,6 @@ class DecoderPOS(Decoder):
         
         return {"decodedObs": self.decodedObs}
 
-
 class DecoderMSM(Decoder):
     def __init__(self, params):
         super().__init__(params)

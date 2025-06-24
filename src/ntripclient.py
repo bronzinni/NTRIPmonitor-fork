@@ -400,52 +400,12 @@ class NtripClients:
             line = line.decode("ISO-8859-1").rstrip()
             if line == "ENDSOURCETABLE":
                 ntripSourcetable.append(line)
+                logging.info("Source table received.")
                 break
             else:
                 ntripSourcetable.append(line)
         await self.closeNtripConnection()
         return ntripSourcetable
-
-
-    async def requestNtripServer(
-        self,
-        casterUrl: str,
-        mountPoint: str,
-        user: str = None,
-        passwd: str = None,
-        ntripVersion: int = 2,
-    ) -> None:
-        """
-
-
-        Parameters
-        ----------
-        casterUrl : str
-            DESCRIPTION.
-        mountPoint : str
-            DESCRIPTION.
-        user : str, optional
-            DESCRIPTION. The default is None.
-        passwd : str, optional
-            DESCRIPTION. The default is None.
-        ntripVersion : int, optional
-            DESCRIPTION. The default is 2.
-         : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        None
-            DESCRIPTION.
-
-        """
-        self.ntripVersion = ntripVersion
-        self.ntripMountPoint = mountPoint
-        await self.openNtripConnection(casterUrl)
-        self.setRequestServerHeader(
-            self.casterUrl.geturl(), self.ntripMountPoint, user, passwd
-        )
-        await self.sendRequestHeader()
 
     async def requestNtripStream(
         self, casterUrl: str, mountPoint: str, user: str = None, passwd: str = None
