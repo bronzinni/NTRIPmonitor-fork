@@ -29,9 +29,9 @@
         "x": 0,
         "y": 0
       },
-      "id": 6,
+      "id": 8,
       "panels": [],
-      "title": "Average Signal to Noise",
+      "title": "Average Carrier to Noise",
       "type": "row"
     },
     {
@@ -140,7 +140,7 @@
           }
         }
       ],
-      "title": "GPS SNR",
+      "title": "GPS CNR [dB Hz]",
       "type": "timeseries"
     },
     {
@@ -249,7 +249,7 @@
           }
         }
       ],
-      "title": "Glonass SNR",
+      "title": "Glonass CNR [dB Hz]",
       "type": "timeseries"
     },
     {
@@ -358,7 +358,7 @@
           }
         }
       ],
-      "title": "Galileo SNR",
+      "title": "Galileo CNR [dB Hz]",
       "type": "timeseries"
     },
     {
@@ -467,11 +467,460 @@
           }
         }
       ],
-      "title": "Beidou SNR",
+      "title": "BeiDou CNR [dB Hz]",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 6,
+      "panels": [],
+      "title": "Rapid Change Detection",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "UYgXEmhnz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 18
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "UYgXEmhnz"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  POWER(SUM(subquery.forward_derivative),2) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LEAD(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((LEAD(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))) - obs_epoch)\r\n    as forward_derivative\r\n  FROM\r\n    gps_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "GPS",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "UYgXEmhnz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 18
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "UYgXEmhnz"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  POWER(SUM(subquery.forward_derivative),2) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LEAD(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((LEAD(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))) - obs_epoch)\r\n    as forward_derivative\r\n  FROM\r\n    glonass_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Glonass",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "UYgXEmhnz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 26
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "UYgXEmhnz"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  POWER(SUM(subquery.forward_derivative),2) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LEAD(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((LEAD(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))) - obs_epoch)\r\n    as forward_derivative\r\n  FROM\r\n    galileo_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Galileo",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "UYgXEmhnz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 26
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "UYgXEmhnz"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  POWER(SUM(subquery.forward_derivative),2) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LEAD(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((LEAD(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))) - obs_epoch)\r\n    as forward_derivative\r\n  FROM\r\n    beidou_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "BeiDou",
       "type": "timeseries"
     }
   ],
-  "refresh": false,
+  "refresh": "",
   "schemaVersion": 38,
   "style": "dark",
   "tags": [],
@@ -479,9 +928,9 @@
     "list": [
       {
         "current": {
-          "selected": false,
-          "text": "TEJH00DNK",
-          "value": "TEJH00DNK"
+          "selected": true,
+          "text": "eketorp_msm",
+          "value": "eketorp_msm"
         },
         "datasource": {
           "type": "postgres",
@@ -507,6 +956,10 @@
           "text": "L1C",
           "value": "L1C"
         },
+        "datasource": {
+          "type": "postgres",
+          "uid": "UYgXEmhnz"
+        },
         "definition": "SELECT DISTINCT sat_signal\nFROM gps_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) ORDER BY sat_signal",
         "hide": 2,
         "includeAll": false,
@@ -523,8 +976,12 @@
       {
         "current": {
           "selected": false,
-          "text": "E1C",
-          "value": "E1C"
+          "text": "E1X",
+          "value": "E1X"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "UYgXEmhnz"
         },
         "definition": "SELECT DISTINCT sat_signal\nFROM galileo_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) ORDER BY sat_signal",
         "hide": 2,
@@ -545,6 +1002,10 @@
           "text": "G1C",
           "value": "G1C"
         },
+        "datasource": {
+          "type": "postgres",
+          "uid": "UYgXEmhnz"
+        },
         "definition": "SELECT DISTINCT sat_signal\nFROM glonass_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) ORDER BY sat_signal",
         "hide": 2,
         "includeAll": false,
@@ -564,6 +1025,10 @@
           "text": "L1C",
           "value": "L1C"
         },
+        "datasource": {
+          "type": "postgres",
+          "uid": "UYgXEmhnz"
+        },
         "definition": "SELECT DISTINCT sat_signal\nFROM bds_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) ORDER BY sat_signal",
         "hide": 2,
         "includeAll": false,
@@ -580,7 +1045,7 @@
     ]
   },
   "time": {
-    "from": "now-12h",
+    "from": "now-1d",
     "to": "now"
   },
   "timepicker": {},
