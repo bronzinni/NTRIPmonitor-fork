@@ -568,7 +568,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  POWER(SUM(subquery.forward_derivative),2) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LEAD(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((LEAD(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))) - obs_epoch)\r\n    as forward_derivative\r\n  FROM\r\n    gps_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
+          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  SUM(POWER(subquery.derivative,2)) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LAG(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((obs_epoch - LAG(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))))\r\n    as derivative\r\n  FROM\r\n    gps_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -655,13 +655,13 @@
         "x": 12,
         "y": 18
       },
-      "id": 9,
+      "id": 12,
       "options": {
         "legend": {
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
         "tooltip": {
           "mode": "single",
@@ -677,7 +677,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  POWER(SUM(subquery.forward_derivative),2) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LEAD(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((LEAD(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))) - obs_epoch)\r\n    as forward_derivative\r\n  FROM\r\n    glonass_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
+          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  SUM(POWER(subquery.derivative,2)) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LAG(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((obs_epoch - LAG(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))))\r\n    as derivative\r\n  FROM\r\n    glonass_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -786,7 +786,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  POWER(SUM(subquery.forward_derivative),2) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LEAD(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((LEAD(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))) - obs_epoch)\r\n    as forward_derivative\r\n  FROM\r\n    galileo_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
+          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  SUM(POWER(subquery.derivative,2)) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LAG(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((obs_epoch - LAG(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))))\r\n    as derivative\r\n  FROM\r\n    galileo_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -895,7 +895,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  POWER(SUM(subquery.forward_derivative),2) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LEAD(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((LEAD(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))) - obs_epoch)\r\n    as forward_derivative\r\n  FROM\r\n    beidou_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
+          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  SUM(POWER(subquery.derivative,2)) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LAG(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((obs_epoch - LAG(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))))\r\n    as derivative\r\n  FROM\r\n    beidou_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -920,7 +920,7 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "",
+  "refresh": false,
   "schemaVersion": 38,
   "style": "dark",
   "tags": [],
@@ -929,8 +929,8 @@
       {
         "current": {
           "selected": true,
-          "text": "eketorp_msm",
-          "value": "eketorp_msm"
+          "text": "TEJH00DNK",
+          "value": "TEJH00DNK"
         },
         "datasource": {
           "type": "postgres",
@@ -976,8 +976,8 @@
       {
         "current": {
           "selected": false,
-          "text": "E1X",
-          "value": "E1X"
+          "text": "E1C",
+          "value": "E1C"
         },
         "datasource": {
           "type": "postgres",
@@ -1045,7 +1045,7 @@
     ]
   },
   "time": {
-    "from": "now-1d",
+    "from": "now-24h",
     "to": "now"
   },
   "timepicker": {},
