@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS coordinates (
     coordinate_id SERIAL,
+    rtcm_id BIGINT,
     mountpoint_id INT, -- REFERENCES mountpoints(mountpoint_id),
     ecef_x NUMERIC(10, 3),
     ecef_y NUMERIC(10, 3),

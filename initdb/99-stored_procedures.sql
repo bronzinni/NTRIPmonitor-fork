@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION public.insert_rtcm_messages(decodedframes json, OUT rtcm_ids bigint[])
+CREATE OR REPLACE FUNCTION public.insert_rtcm_messages(decodedframes json, OUT rtcm_ids BIGINT[])
  RETURNS BIGINT[]
  LANGUAGE plpgsql
 AS $$
@@ -6,7 +6,7 @@ BEGIN
     -- Insert into rtcm_messages and get the IDs
     WITH insertion AS (
         INSERT INTO rtcm_messages (mountpoint_id, time_received, msg_type, msg_size)
-        SELECT (json_array_elements->>'mountpount_id')::integer,
+        SELECT (json_array_elements->>'mountpoint_id')::integer,
                (json_array_elements->>'time_received')::timestamp without time zone,
                (json_array_elements->>'msg_type')::integer,
                (json_array_elements->>'msg_size')::integer
@@ -210,16 +210,17 @@ CREATE OR REPLACE FUNCTION public.upsert_coordinates(decodedObsFrame JSON)
 AS $$
 BEGIN
     INSERT INTO coordinates
-    (rtcm_id, ecef_x, ecef_y, ecef_z, antHgt)
+    (rtcm_id, mountpoint_id, ecef_x, ecef_y, ecef_z, antHgt)
     SELECT (json_array_elements->>0)::bigint, 
-           (json_array_elements->>1)::numeric(10, 3),
+           (json_array_elements->>1)::int, 
            (json_array_elements->>2)::numeric(10, 3),
            (json_array_elements->>3)::numeric(10, 3),
-           (json_array_elements->>4)::numeric(10, 3)
+           (json_array_elements->>4)::numeric(10, 3),
+           (json_array_elements->>5)::numeric(10, 3)
     FROM json_array_elements(decodedObsFrame)
-    ON CONFLICT (mountpoint) DO UPDATE SET
+    ON CONFLICT (mountpoint_id) DO UPDATE SET
         rtcm_package_id = EXCLUDED.rtcm_package_id,
-        rtcm_msg_type = EXCLUDED.rtcm_msg_type,
+        mountpoint_id = EXCLUDED.mountpoint_id,
         ecef_x = EXCLUDED.ecef_x,
         ecef_y = EXCLUDED.ecef_y,
         ecef_z = EXCLUDED.ecef_z,

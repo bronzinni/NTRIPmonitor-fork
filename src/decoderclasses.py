@@ -15,6 +15,125 @@ class Decoder(ABC):
         self.data = params.get('data', None)
 
     @staticmethod
+    async def batchDecodeFrame(encodedFrames: list, storeObsCheck: bool, rtcmMessage: Rtcm3):
+        decodedFrames = []
+        decodedObs = []
+        for params in encodedFrames:
+            try:
+                decodedFrame, decoderResult = Decoder.getDecoder(params, storeObsCheck, rtcmMessage)
+                decodedFrames.append(decodedFrame)
+                if decoderResult is not None:
+                    decodedObs.append(decoderResult["decodedObs"])
+                else:
+                    decodedObs.append(None)
+            except Exception as error:
+                logging.error(f"Errors in grabbing decoder class : {error}")
+                continue
+        return decodedFrames, decodedObs
+
+    @staticmethod
+    def getDecoder(params, storeObsCheck, rtcmMessage: Rtcm3):
+        try: 
+            params['msg_type'], params['data'] = rtcmMessage.decodeRtcmFrame(params['frame'])
+        except Exception as error:
+            logging.error(f"Failed to decode RTCM frame with error: {error}")
+            return None, None
+        decodedFrame = Decoder.rtcmSimpleMetadata(params)
+        # decoderClass = None
+        decodedObs = None
+        # logging.info(params['msg_type'])
+        if storeObsCheck:
+            decoderClass = DECODER_MAP.get(params['msg_type'])
+            if decoderClass is None:
+                logging.debug(f"Message type {params['msg_type']} not supported")
+                return decodedFrame, None
+            else:
+                logging.debug(f"Message type {params['msg_type']} supported")
+                decoderInstance = decoderClass(params)
+                try:
+                    decodedObs = decoderInstance.decode()
+                    if decodedObs is None or not decodedObs:
+                        return decodedFrame, None
+                except Exception as error:
+                    logging.error(f"Failed to decode RTCM OBS frame with error: {error}")
+                    return decodedFrame, None
+        return decodedFrame, decodedObs
+
+    @staticmethod
+    def rtcmSimpleMetadata(params: dict):
+        try:
+            # CBH: We are getting rid of message specific columns in the rtcm_messages table
+            # if params['msg_type'] >= 1071 and params['msg_type'] <= 1127:
+            #     satCount = len(params['data'][1])
+            #     obsEpochStr = Decoder.gnssEpochStr(params['msg_type'], params['data'][0][2] / 1000.0)
+            # else:
+            #     pass
+            decodedFrame = {
+                "mountpoint_id": params['mountpoint_id'],
+                "time_received": strftime(
+                    f"%Y-%m-%d %H:%M:%S.{int(params['time_received'] % 1 * 1000000):06}",
+                    gmtime(params['time_received']),
+                ),
+                "msg_type": params['msg_type'],
+                "msg_size": params['msg_size']
+            }
+        except Exception as error:
+            logging.info(f"Failed to decode simple metadata {params['msg_type']}: {error}")
+        return decodedFrame
+
+
+    @abstractmethod
+    def decode(self):
+        pass
+
+class DecoderTypeXXX(Decoder):
+    def decode(self):
+        pass
+
+class DecoderPOS(Decoder):
+    def __init__(self, params):
+        super().__init__(params)
+        self.data = params['data']
+        self.mountPoint = params['mountpoint_id']
+        self.messageType = params['msg_type']
+        self.decodedObs = []
+        self.table = []
+
+    def decode(self):
+        try:
+            # ARP given in 1e-5 m as integer, convert to m as float
+            x = self.data[1][0] / 10000.0
+            y = self.data[1][1] / 10000.0
+            z = self.data[1][2] / 10000.0
+            # Antenna reference height not included in message type 1005
+            antHgt = None
+            if self.messageType == 1006:
+                antHgt = self.data[1][3] / 10000.0
+            
+            self.decodedObs.append([self.messageType,
+                               self.mountPoint,
+                               x,
+                               y,
+                               z,
+                               antHgt])
+        except Exception as error:
+            logging.error(f"Failed to decode ARP message {self.messageType} with error: {error}. Setting observation to None.")
+            self.decodedObs = None
+        
+        return {"decodedObs": self.decodedObs}
+
+class DecoderMSM(Decoder):
+    def __init__(self, params):
+        super().__init__(params)
+        self.data = params['data']
+        self.timeStampInFrame = params['time_received']
+        self.messageSize = params['msg_size']
+        self.mountPoint = params['mountpoint_id']
+        self.messageType = params['msg_type']
+        self.decodedFrame = []
+        self.decodedObs = []
+
+    @staticmethod
     def gnssEpochStr(messageType: int, obsEpoch: float, use_stored_procedure: bool = True) -> str:
         # Get the current time in seconds since the epoch
         now = time()
@@ -52,126 +171,6 @@ class Decoder(ABC):
             epochStr = datetime.fromtimestamp(obsTime).replace(microsecond=microseconds)
         return epochStr
 
-
-    @staticmethod
-    async def batchDecodeFrame(encodedFrames: list, storeObsCheck: bool, rtcmMessage: Rtcm3):
-        decodedFrames = []
-        decodedObs = []
-        for params in encodedFrames:
-            try:
-                decodedFrame, decoderResult = Decoder.getDecoder(params, storeObsCheck, rtcmMessage)
-                decodedFrames.append(decodedFrame)
-                if decoderResult is not None:
-                    decodedObs.append(decoderResult["decodedObs"])
-                else:
-                    decodedObs.append(None)
-            except Exception as error:
-                logging.error(f"Errors in grabbing decoder class : {error}")
-                continue
-        return decodedFrames, decodedObs
-
-    @staticmethod
-    def getDecoder(params, storeObsCheck, rtcmMessage: Rtcm3):
-        try: 
-            params['messageType'], params['data'] = rtcmMessage.decodeRtcmFrame(params['frame'])
-        except Exception as error:
-            logging.error(f"Failed to decode RTCM frame with error: {error}")
-            return None, None
-        decodedFrame = Decoder.rtcmSimpleMetadata(params)
-        # decoderClass = None
-        decodedObs = None
-        # logging.info(params['messageType'])
-        if storeObsCheck:
-            decoderClass = DECODER_MAP.get(params['messageType'])
-            if decoderClass is None:
-                logging.debug(f"Message type {params['messageType']} not supported")
-                return decodedFrame, None
-            else:
-                logging.debug(f"Message type {params['messageType']} supported")
-                decoderInstance = decoderClass(params)
-                try:
-                    decodedObs = decoderInstance.decode()
-                    if decodedObs is None or not decodedObs:
-                        return decodedFrame, None
-                except Exception as error:
-                    logging.error(f"Failed to decode RTCM OBS frame with error: {error}")
-                    return decodedFrame, None
-        return decodedFrame, decodedObs
-
-    @staticmethod
-    def rtcmSimpleMetadata(params: dict):
-        try:
-            # CBH: We are getting rid of message specific columns in the rtcm_messages table
-            if params['messageType'] >= 1071 and params['messageType'] <= 1127:
-                satCount = len(params['data'][1])
-                obsEpochStr = Decoder.gnssEpochStr(params['messageType'], params['data'][0][2] / 1000.0)
-            else:
-                pass
-            decodedFrame = {
-                "mountpoint_id": params['mountPoint'],
-                "time_received": strftime(
-                    f"%Y-%m-%d %H:%M:%S.{int(params['timeStampInFrame'] % 1 * 1000000):06}",
-                    gmtime(params['timeStampInFrame']),
-                ),
-                "msg_type": params['messageType'],
-                "msg_size": params['messageSize']
-            }
-        except Exception as error:
-            logging.info(f"Failed to decode simple metadata {params['messageType']}: {error}")
-        return decodedFrame
-
-
-    @abstractmethod
-    def decode(self):
-        pass
-
-class DecoderTypeXXX(Decoder):
-    def decode(self):
-        pass
-
-class DecoderPOS(Decoder):
-    def __init__(self, params):
-        super().__init__(params)
-        self.data = params['data']
-        self.mountPoint = params['mountPoint']
-        self.messageType = params['messageType']
-        self.decodedObs = []
-        self.table = []
-
-    def decode(self):
-        try:
-            # ARP given in 1e-5 m as integer, convert to m as float
-            x = self.data[1][0] / 10000.0
-            y = self.data[1][1] / 10000.0
-            z = self.data[1][2] / 10000.0
-            # Antenna reference height not included in message type 1005
-            antHgt = None
-            if self.messageType == 1006:
-                antHgt = self.data[1][3] / 10000.0
-            
-            self.decodedObs.append([self.messageType,
-                               self.mountPoint,
-                               x,
-                               y,
-                               z,
-                               antHgt])
-        except Exception as error:
-            logging.error(f"Failed to decode ARP message {self.messageType} with error: {error}. Setting observation to None.")
-            self.decodedObs = None
-        
-        return {"decodedObs": self.decodedObs}
-
-class DecoderMSM(Decoder):
-    def __init__(self, params):
-        super().__init__(params)
-        self.data = params['data']
-        self.timeStampInFrame = params['timeStampInFrame']
-        self.messageSize = params['messageSize']
-        self.mountPoint = params['mountPoint']
-        self.messageType = params['messageType']
-        self.decodedFrame = []
-        self.decodedObs = []
-
     def decode(self):
         rtcmmessage = Rtcm3()
         try:
@@ -190,7 +189,7 @@ class DecoderMSM(Decoder):
                     constellation_id = "C"
 
             if self.messageType >= 1071 and self.messageType <= 1127:
-                obsEpochStr = Decoder.gnssEpochStr(self.messageType, self.data[0][2] / 1000.0)
+                obsEpochStr = DecoderMSM.gnssEpochStr(self.messageType, self.data[0][2] / 1000.0)
                 satSignals = rtcmmessage.msmSignalTypes(self.messageType, self.data[0][10])
                 signalCount = len(satSignals)
                 availSatMask = str(self.data[0][9])

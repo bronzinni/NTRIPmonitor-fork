@@ -198,11 +198,11 @@ def mountpointSplitter(casterSettingsDict: dict, maxProcesses: int) -> list:
         remaining_in_caster = len(caster.mountpoints)
         while remaining_in_caster > 0:
             if space_in_chunk > remaining_in_caster:
-                chunk.append(caster.mountpoints[position_in_caster:position_in_caster + remaining_in_caster])
+                chunk = chunk + caster.mountpoints[position_in_caster:position_in_caster + remaining_in_caster]
                 space_in_chunk = space_in_chunk - remaining_in_caster
                 remaining_in_caster = 0
             if space_in_chunk <= remaining_in_caster:
-                chunk.append(caster.mountpoints[position_in_caster:position_in_caster + space_in_chunk])
+                chunk = chunk + caster.mountpoints[position_in_caster:position_in_caster + space_in_chunk]
                 chunks.append(chunk)
                 chunk = []
                 space_in_chunk = mountpoints_per_proc
@@ -229,12 +229,12 @@ async def periodicFrameAppender(
         await asyncio.sleep(
             checkInterval
         )  # Wait for a short period to avoid hogging the CPU
-        if encodedFrames and (time() - encodedFrames[-1]["timeStampInFrame"]) > checkInterval:
+        if encodedFrames and (time() - encodedFrames[-1]["time_received"]) > checkInterval:
             try:
                 await appendToList(encodedFrames[:], sharedEncoded, lock)
-                logging.debug(
-                    f"{mountPoint}: {len(encodedFrames)} frames collected. Appended to shared memory."
-                )
+                # logging.debug(
+                #     f"{mountPoint}: {len(encodedFrames)} frames collected. Appended to shared memory. {[frame["mountpoint_id"] for frame in encodedFrames]}"
+                # )
                 encodedFrames.clear()
             except Exception as error:
                 logging.error(
@@ -249,22 +249,24 @@ async def periodicFrameAppender(
 async def procRtcmStream(
     casterSettings: CasterSettings,
     dbSettings: DbSettings,
-    mountPoint: str,
+    mountPoint: Mountpoint,
     lock,
     sharedEncoded,
     fail: int = 0,
     retry: int = 3,
 ) -> None:
     ntripclient = NtripClients()
-    ntripLogger = NtripLogHandler(dbSettings, mountPoint)
+    ntripLogger = NtripLogHandler(dbSettings, mountPoint.sitename)
     await ntripLogger.initializePool()
     ntripclient = await ntripLogger.requestStream(
         ntripclient, casterSettings, log_disconnect=False
     )
     encodedFrames = []
 
+    logging.debug(mountPoint)
+
     asyncio.create_task(
-        periodicFrameAppender(encodedFrames, sharedEncoded, lock, mountPoint)
+        periodicFrameAppender(encodedFrames, sharedEncoded, lock, mountPoint.sitename)
     )
 
     try:
@@ -275,9 +277,9 @@ async def procRtcmStream(
                     encodedFrames.append(
                         {
                             "frame": rtcmFrame,
-                            "timeStampInFrame": timeStamp,
-                            "messageSize": len(rtcmFrame),
-                            "mountPoint": mountPoint,
+                            "time_received": timeStamp,
+                            "msg_size": len(rtcmFrame),
+                            "mountpoint_id": mountPoint.mountpointId,
                         }
                     )
             except (ConnectionError, IOError, IndexError):
@@ -293,9 +295,9 @@ async def procRtcmStream(
     # Fails on SSL connection and commented out:
     # await ntripclient.ntripWriter.wait_closed()
     while not ntripclient.ntripWriter.is_closing():
-        logging.info(f"Waiting for connection to close: {mountPoint}.")
+        logging.info(f"Waiting for connection to close: {mountPoint.sitename}.")
         await asyncio.sleep(0.5)
-    logging.info(f"{mountPoint}: Closed connection.")
+    logging.info(f"{mountPoint.sitename}: Closed connection.")
     return
 
 async def rtcmStreamTasks(
@@ -307,10 +309,10 @@ async def rtcmStreamTasks(
     pipe_read: Connection
 ) -> None:
     tasks = {}
-    # FAIL HERE: mountPointList is now actually a list of Mountpoint instances 
-    for casterId, mountpoint in mountPointList:
-        casterSettings = casterSettingsDict[casterId]
-        tasks[mountpoint] = asyncio.create_task(
+
+    for mountpoint in mountPointList:
+        casterSettings = casterSettingsDict[mountpoint.caster.name]
+        tasks[mountpoint.sitename] = asyncio.create_task(
             procRtcmStream(
                 casterSettings,
                 dbSettings,
@@ -318,7 +320,7 @@ async def rtcmStreamTasks(
                 lock,
                 sharedEncoded,
             ),
-            name=mountpoint,
+            name=mountpoint.sitename,
         )
 
     # Create the watchdog task
@@ -344,53 +346,6 @@ async def rtcmStreamTasks(
 #             reducedCasterSettingsDict[caster] = casterSettingsDict[caster]
 #     return reducedCasterSettingsDict
     logging.debug(f"Reader process on loop {id(asyncio.get_running_loop())} done.")
-
-
-
-async def getMountpoints(
-    casterSettings: CasterSettings, sleepTime: int = 30, fail: int = 0
-) -> list[str]:
-    """
-    This function retrieves the list of mountpoints from the NTRIP caster.
-
-    Parameters:
-    casterSettings (CasterSettings): An instance of CasterSettings containing the caster URL.
-    sleepTime (int): The time to wait before retrying if a connection error occurs.
-    fail (int): The number of failed attempts to connect to the caster.
-
-    Returns:
-    list[str]: A list of mountpoints.
-    """
-
-    # Create an instance of NtripStream
-    ntripclient = NtripClients()
-
-    # Initialize an empty list to hold the mountpoints
-    mountpoints = []
-
-    # Try to request the source table from the caster
-    logging.info("Requesting source table from caster for mountpoint information")
-    try:
-        sourceTable = await ntripclient.requestSourcetable(casterSettings.casterUrl)
-    # If a connection error occurs, log an error message, wait, and retry
-    except ConnectionError:
-        fail += 1
-        logging.error(
-            f"{fail} failed attempt to NTRIP connect to {casterSettings.casterUrl}. "
-            f"Will retry in {sleepTime} seconds."
-        )
-        asyncio.sleep(sleepTime)
-    # If an unknown error occurs, log an error message and abort monitoring
-    except Exception as error:
-        logging.error(f"Unknown error: {error}")
-    # If the source table is successfully retrieved, extract the mountpoints
-    else:
-        for row in sourceTable:
-            sourceCols = row.split(sep=";")
-            # If the row represents a stream (STR), add the mountpoint to the list
-            if sourceCols[0] == "STR":
-                mountpoints.append(sourceCols[1])
-        return mountpoints
 
 
 
@@ -524,6 +479,7 @@ def loadCasterSettings():
             caster_mountpoint_key = f"{prefix}_CASTER_MOUNTPOINT"
 
             # Extract other settings using the constructed keys
+            casterInstance.name = caster_id
             casterInstance.casterUrl = os.getenv(caster_url_key, "")
             casterInstance.user = os.getenv(caster_user_key, "")
             casterInstance.password = os.getenv(caster_password_key, "")

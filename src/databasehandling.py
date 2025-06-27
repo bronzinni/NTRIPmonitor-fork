@@ -244,7 +244,6 @@ class NtripObservationHandler(DatabaseHandler):
             )
             rtcmPackageIds = None
 
-        rtcmPackageIds = None
         return rtcmPackageIds
 
     async def dbInsertBatch(
@@ -258,9 +257,9 @@ class NtripObservationHandler(DatabaseHandler):
                 await self.dbInsertObsInfoStoredBatch(
                     decodedFrames, decodedObs, rtcmPackageIds
                 )
-            elif rtcmPackageIds is not None:
+            elif rtcmPackageIds is None:
                 logging.debug(
-                    "RTCM package ID returned as None. Not storing observations."
+                    "RTCM package IDs returned None. Not storing observations."
                 )
         except Exception as error:
             logging.error(

@@ -15,7 +15,6 @@ from __version__ import __version__
 
 TIMEOUT_READ_STREAM = 10.0
 
-# CBH: to ensure closing connections correctly, this ought to be an asynchronous context manager 
 class NtripClients:
     RTCM3FRAMEPREAMPLE = Bits(bin="0b11010011")
     RTCM3FRAMEHEADERFORMAT = "bin:8, pad:6, uint:10"
