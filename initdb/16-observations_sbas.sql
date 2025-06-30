@@ -1,7 +1,8 @@
 CREATE TABLE IF NOT EXISTS observations_sbas (
     obs_id BIGSERIAL,
     rtcm_id BIGINT, -- REFERENCES rtcm_messages(rtcm_id) ON DELETE CASCADE,
-    sat_id CHAR(4),
+    obs_epoch TIMESTAMPTZ,
+    sat_id CHAR(3),
     sat_signal CHAR(3),
     obs_code NUMERIC(13, 10),
     obs_phase NUMERIC(14, 11),

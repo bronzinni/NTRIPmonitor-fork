@@ -22,16 +22,16 @@ CREATE OR REPLACE FUNCTION public.insert_observations_gps(decodedObsFrame json)
  LANGUAGE plpgsql
 AS $$
 BEGIN
-    INSERT INTO observations_gps (rtcm_id, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
+    INSERT INTO observations_gps(rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
     SELECT (json_array_elements->>0)::bigint,
-           (json_array_elements->>4)::timestamp with time zone,
-           (json_array_elements->>1)::char(4),
-           (json_array_elements->>2)::char(3), 
-           (json_array_elements->>3)::numeric(13, 10), 
-           (json_array_elements->>4)::numeric(14, 11), 
-           (json_array_elements->>5)::numeric(8, 4), 
-           (json_array_elements->>6)::numeric(6, 4), 
-           (json_array_elements->>7)::integer
+           (json_array_elements->>2)::timestamp with time zone,
+           (json_array_elements->>4)::char(4),
+           (json_array_elements->>5)::char(3), 
+           (json_array_elements->>6)::numeric(13, 10), 
+           (json_array_elements->>7)::numeric(14, 11), 
+           (json_array_elements->>8)::numeric(8, 4), 
+           (json_array_elements->>9)::numeric(6, 4), 
+           (json_array_elements->>10)::integer
     FROM json_array_elements(decodedObsFrame);
 END;
 $$;
@@ -42,15 +42,16 @@ CREATE OR REPLACE FUNCTION public.insert_observations_glonass(decodedObsFrame js
  LANGUAGE plpgsql
 AS $$
 BEGIN
-    INSERT INTO observations_glonass (rtcm_id, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
+    INSERT INTO observations_glonass(rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
     SELECT (json_array_elements->>0)::bigint,
-           (json_array_elements->>1)::char(4), 
-           (json_array_elements->>2)::char(3), 
-           (json_array_elements->>3)::numeric(13, 10), 
-           (json_array_elements->>4)::numeric(14, 11), 
-           (json_array_elements->>5)::numeric(8, 4), 
-           (json_array_elements->>6)::numeric(6, 4), 
-           (json_array_elements->>7)::integer
+           (json_array_elements->>2)::timestamp with time zone,
+           (json_array_elements->>4)::char(4),
+           (json_array_elements->>5)::char(3), 
+           (json_array_elements->>6)::numeric(13, 10), 
+           (json_array_elements->>7)::numeric(14, 11), 
+           (json_array_elements->>8)::numeric(8, 4), 
+           (json_array_elements->>9)::numeric(6, 4), 
+           (json_array_elements->>10)::integer
     FROM json_array_elements(decodedObsFrame);
 END;
 $$;
@@ -61,15 +62,16 @@ CREATE OR REPLACE FUNCTION public.insert_observations_galileo(decodedObsFrame js
  LANGUAGE plpgsql
 AS $$
 BEGIN
-    INSERT INTO observations_galileo (rtcm_id, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
+    INSERT INTO observations_galileo(rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
     SELECT (json_array_elements->>0)::bigint,
-           (json_array_elements->>1)::char(4), 
-           (json_array_elements->>2)::char(3), 
-           (json_array_elements->>3)::numeric(13, 10), 
-           (json_array_elements->>4)::numeric(14, 11), 
-           (json_array_elements->>5)::numeric(8, 4), 
-           (json_array_elements->>6)::numeric(6, 4), 
-           (json_array_elements->>7)::integer
+           (json_array_elements->>2)::timestamp with time zone,
+           (json_array_elements->>4)::char(4),
+           (json_array_elements->>5)::char(3), 
+           (json_array_elements->>6)::numeric(13, 10), 
+           (json_array_elements->>7)::numeric(14, 11), 
+           (json_array_elements->>8)::numeric(8, 4), 
+           (json_array_elements->>9)::numeric(6, 4), 
+           (json_array_elements->>10)::integer
     FROM json_array_elements(decodedObsFrame);
 END;
 $$;
@@ -80,15 +82,16 @@ CREATE OR REPLACE FUNCTION public.insert_observations_beidou(decodedObsFrame jso
  LANGUAGE plpgsql
 AS $$
 BEGIN
-    INSERT INTO observations_beidou (rtcm_id, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
+    INSERT INTO observations_beidou (rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
     SELECT (json_array_elements->>0)::bigint,
-           (json_array_elements->>1)::char(4), 
-           (json_array_elements->>2)::char(3), 
-           (json_array_elements->>3)::numeric(13, 10), 
-           (json_array_elements->>4)::numeric(14, 11), 
-           (json_array_elements->>5)::numeric(8, 4), 
-           (json_array_elements->>6)::numeric(6, 4), 
-           (json_array_elements->>7)::integer
+           (json_array_elements->>2)::timestamp with time zone,
+           (json_array_elements->>4)::char(4),
+           (json_array_elements->>5)::char(3), 
+           (json_array_elements->>6)::numeric(13, 10), 
+           (json_array_elements->>7)::numeric(14, 11), 
+           (json_array_elements->>8)::numeric(8, 4), 
+           (json_array_elements->>9)::numeric(6, 4), 
+           (json_array_elements->>10)::integer
     FROM json_array_elements(decodedObsFrame);
 END;
 $$;
@@ -99,15 +102,16 @@ CREATE OR REPLACE FUNCTION public.insert_observations_qzss(decodedObsFrame json)
  LANGUAGE plpgsql
 AS $$
 BEGIN
-    INSERT INTO observations_qzss (rtcm_id, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
+    INSERT INTO observations_qzss (rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
     SELECT (json_array_elements->>0)::bigint,
-           (json_array_elements->>1)::char(4), 
-           (json_array_elements->>2)::char(3), 
-           (json_array_elements->>3)::numeric(13, 10), 
-           (json_array_elements->>4)::numeric(14, 11), 
-           (json_array_elements->>5)::numeric(8, 4), 
-           (json_array_elements->>6)::numeric(6, 4), 
-           (json_array_elements->>7)::integer
+           (json_array_elements->>2)::timestamp with time zone,
+           (json_array_elements->>4)::char(4),
+           (json_array_elements->>5)::char(3), 
+           (json_array_elements->>6)::numeric(13, 10), 
+           (json_array_elements->>7)::numeric(14, 11), 
+           (json_array_elements->>8)::numeric(8, 4), 
+           (json_array_elements->>9)::numeric(6, 4), 
+           (json_array_elements->>10)::integer
     FROM json_array_elements(decodedObsFrame);
 END;
 $$;
@@ -118,15 +122,16 @@ CREATE OR REPLACE FUNCTION public.insert_observations_sbas(decodedObsFrame json)
  LANGUAGE plpgsql
 AS $$
 BEGIN
-    INSERT INTO observations_sbas (rtcm_id, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
+    INSERT INTO observations_sbas(rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
     SELECT (json_array_elements->>0)::bigint,
-           (json_array_elements->>1)::char(4), 
-           (json_array_elements->>2)::char(3), 
-           (json_array_elements->>3)::numeric(13, 10), 
-           (json_array_elements->>4)::numeric(14, 11), 
-           (json_array_elements->>5)::numeric(8, 4), 
-           (json_array_elements->>6)::numeric(6, 4), 
-           (json_array_elements->>7)::integer
+           (json_array_elements->>2)::timestamp with time zone,
+           (json_array_elements->>4)::char(4),
+           (json_array_elements->>5)::char(3), 
+           (json_array_elements->>6)::numeric(13, 10), 
+           (json_array_elements->>7)::numeric(14, 11), 
+           (json_array_elements->>8)::numeric(8, 4), 
+           (json_array_elements->>9)::numeric(6, 4), 
+           (json_array_elements->>10)::integer
     FROM json_array_elements(decodedObsFrame);
 END;
 $$;
@@ -212,14 +217,14 @@ BEGIN
     INSERT INTO coordinates
     (rtcm_id, mountpoint_id, ecef_x, ecef_y, ecef_z, antHgt)
     SELECT (json_array_elements->>0)::bigint, 
-           (json_array_elements->>1)::int, 
-           (json_array_elements->>2)::numeric(10, 3),
+           (json_array_elements->>2)::int, 
            (json_array_elements->>3)::numeric(10, 3),
            (json_array_elements->>4)::numeric(10, 3),
-           (json_array_elements->>5)::numeric(10, 3)
+           (json_array_elements->>5)::numeric(10, 3),
+           (json_array_elements->>6)::numeric(10, 3)
     FROM json_array_elements(decodedObsFrame)
     ON CONFLICT (mountpoint_id) DO UPDATE SET
-        rtcm_package_id = EXCLUDED.rtcm_package_id,
+        rtcm_id = EXCLUDED.rtcm_id,
         mountpoint_id = EXCLUDED.mountpoint_id,
         ecef_x = EXCLUDED.ecef_x,
         ecef_y = EXCLUDED.ecef_y,

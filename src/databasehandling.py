@@ -114,74 +114,74 @@ class DatabaseConnection():
 
 class NtripObservationHandler(DatabaseHandler):
     INPUTTABLE = {
-        1001: "insert_gps_observations",
-        1002: "insert_gps_observations",
-        1003: "insert_gps_observations",
-        1004: "insert_gps_observations",
+        1001: "insert_observations_gps",
+        1002: "insert_observations_gps",
+        1003: "insert_observations_gps",
+        1004: "insert_observations_gps",
 
         1005: "upsert_coordinates",
         1006: "upsert_coordinates",
 
-        1009: "insert_glonass_observations",
-        1010: "insert_glonass_observations",
-        1011: "insert_glonass_observations",
-        1012: "insert_glonass_observations",
+        1009: "insert_observations_glonass",
+        1010: "insert_observations_glonass",
+        1011: "insert_observations_glonass",
+        1012: "insert_observations_glonass",
 
-        1071: "insert_gps_observations",
-        1072: "insert_gps_observations",
-        1073: "insert_gps_observations",
-        1074: "insert_gps_observations",
-        1075: "insert_gps_observations",
-        1076: "insert_gps_observations",
-        1077: "insert_gps_observations",
+        1071: "insert_observations_gps",
+        1072: "insert_observations_gps",
+        1073: "insert_observations_gps",
+        1074: "insert_observations_gps",
+        1075: "insert_observations_gps",
+        1076: "insert_observations_gps",
+        1077: "insert_observations_gps",
 
-        1081: "insert_glonass_observations",
-        1082: "insert_glonass_observations",
-        1083: "insert_glonass_observations",
-        1084: "insert_glonass_observations",
-        1085: "insert_glonass_observations",
-        1086: "insert_glonass_observations",
-        1087: "insert_glonass_observations",
+        1081: "insert_observations_glonass",
+        1082: "insert_observations_glonass",
+        1083: "insert_observations_glonass",
+        1084: "insert_observations_glonass",
+        1085: "insert_observations_glonass",
+        1086: "insert_observations_glonass",
+        1087: "insert_observations_glonass",
 
-        1091: "insert_galileo_observations",
-        1092: "insert_galileo_observations",
-        1093: "insert_galileo_observations",
-        1094: "insert_galileo_observations",
-        1095: "insert_galileo_observations",
-        1096: "insert_galileo_observations",
-        1097: "insert_galileo_observations",
+        1091: "insert_observations_galileo",
+        1092: "insert_observations_galileo",
+        1093: "insert_observations_galileo",
+        1094: "insert_observations_galileo",
+        1095: "insert_observations_galileo",
+        1096: "insert_observations_galileo",
+        1097: "insert_observations_galileo",
 
-        1101: "insert_sbas_observations",
-        1102: "insert_sbas_observations",
-        1103: "insert_sbas_observations",
-        1104: "insert_sbas_observations",
-        1105: "insert_sbas_observations",
-        1106: "insert_sbas_observations",
-        1107: "insert_sbas_observations",
+        1101: "insert_observations_sbas",
+        1102: "insert_observations_sbas",
+        1103: "insert_observations_sbas",
+        1104: "insert_observations_sbas",
+        1105: "insert_observations_sbas",
+        1106: "insert_observations_sbas",
+        1107: "insert_observations_sbas",
 
-        1111: "insert_qzss_observations",
-        1112: "insert_qzss_observations",
-        1113: "insert_qzss_observations",
-        1114: "insert_qzss_observations",
-        1115: "insert_qzss_observations",
-        1116: "insert_qzss_observations",
-        1117: "insert_qzss_observations",
+        1111: "insert_observations_qzss",
+        1112: "insert_observations_qzss",
+        1113: "insert_observations_qzss",
+        1114: "insert_observations_qzss",
+        1115: "insert_observations_qzss",
+        1116: "insert_observations_qzss",
+        1117: "insert_observations_qzss",
 
-        1121: "insert_beidou_observations",
-        1122: "insert_beidou_observations",
-        1123: "insert_beidou_observations",
-        1124: "insert_beidou_observations",
-        1125: "insert_beidou_observations",
-        1126: "insert_beidou_observations",
-        1127: "insert_beidou_observations",
+        1121: "insert_observations_beidou",
+        1122: "insert_observations_beidou",
+        1123: "insert_observations_beidou",
+        1124: "insert_observations_beidou",
+        1125: "insert_observations_beidou",
+        1126: "insert_observations_beidou",
+        1127: "insert_observations_beidou",
 
-        1121: "insert_beidou_observations",
-        1122: "insert_beidou_observations",
-        1123: "insert_beidou_observations",
-        1124: "insert_beidou_observations",
-        1125: "insert_beidou_observations",
-        1126: "insert_beidou_observations",
-        1127: "insert_beidou_observations",
+        1121: "insert_observations_beidou",
+        1122: "insert_observations_beidou",
+        1123: "insert_observations_beidou",
+        1124: "insert_observations_beidou",
+        1125: "insert_observations_beidou",
+        1126: "insert_observations_beidou",
+        1127: "insert_observations_beidou",
     }
 
     def __init__(self, dbSettings = DbSettings):
@@ -208,13 +208,14 @@ class NtripObservationHandler(DatabaseHandler):
                 connection = await self.getConnection()
                 try:
                     stored_procedure = await NtripObservationHandler.grabStoredProcedure(
-                        decodedFrames[index][3]
+                        decodedFrames[index]['msg_type']
                     )
                     if stored_procedure is None:
                         logging.error(
-                            f"No stored procedure found for RTCM message identifier: {decodedFrames[index][3]}"
+                            f"No stored procedure found for RTCM message identifier: {decodedFrames[index]['msg_type']}"
                         )
                         continue
+
                     query = f"SELECT {stored_procedure}($1::json)"
                     logging.debug(f"Executing query: {query}")
                     await connection.execute(query, decodedObsFrameJson)

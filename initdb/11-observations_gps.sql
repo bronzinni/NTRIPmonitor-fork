@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS observations_gps (
     obs_id BIGSERIAL,
     rtcm_id BIGINT, -- REFERENCES rtcm_messages(rtcm_id) ON DELETE CASCADE,
     obs_epoch TIMESTAMPTZ,
-    sat_id CHAR(4),
+    sat_id CHAR(3),
     sat_signal CHAR(3),
     obs_code NUMERIC(13, 10),
     obs_phase NUMERIC(14, 11),
