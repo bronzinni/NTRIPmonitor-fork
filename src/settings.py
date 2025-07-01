@@ -40,8 +40,7 @@ class CasterSettings:
     casterId: int = None
     casterUrl: str = None
     user: str = None
-    password: str = None
-    # requested_mountpoints: list[str] = field(default_factory=list)
+    password: str = field(default=None, repr = False)
     active: bool = False
     mountpoints: list[Mountpoint] = field(default_factory=list)
 
