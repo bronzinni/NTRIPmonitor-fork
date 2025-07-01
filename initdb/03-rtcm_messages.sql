@@ -7,9 +7,11 @@ CREATE TABLE IF NOT EXISTS rtcm_messages (
 );
 
 CREATE UNIQUE INDEX idx_time_id ON rtcm_messages(time_received, rtcm_id);
+CREATE INDEX ON rtcm_messages(mountpoint_id);
 
 SELECT create_hypertable('rtcm_messages', by_range('time_received'));
 
+CREATE INDEX ON rtcm_messages(time_received, mountpoint_id);
 CREATE INDEX ON rtcm_messages(time_received, mountpoint_id, rtcm_id);
 CREATE INDEX ON rtcm_messages(time_received, mountpoint_id, rtcm_id, msg_type);
 

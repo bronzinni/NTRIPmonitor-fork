@@ -11,3 +11,5 @@ CREATE TABLE IF NOT EXISTS observations_glonass (
     obs_lock_time_indicator INTEGER,
     PRIMARY KEY (obs_id, rtcm_id)
 );
+
+CREATE INDEX ON observations_glonass(rtcm_id);

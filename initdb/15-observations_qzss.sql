@@ -11,3 +11,5 @@ CREATE TABLE IF NOT EXISTS observations_qzss (
     obs_lock_time_indicator INTEGER,
     PRIMARY KEY (obs_id, rtcm_id)
 );
+
+CREATE INDEX ON observations_qzss(rtcm_id);

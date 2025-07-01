@@ -25,7 +25,7 @@ BEGIN
     INSERT INTO observations_gps(rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
     SELECT (json_array_elements->>0)::bigint,
            (json_array_elements->>2)::timestamp with time zone,
-           (json_array_elements->>4)::char(4),
+           (json_array_elements->>4)::char(3),
            (json_array_elements->>5)::char(3), 
            (json_array_elements->>6)::numeric(13, 10), 
            (json_array_elements->>7)::numeric(14, 11), 
@@ -45,7 +45,7 @@ BEGIN
     INSERT INTO observations_glonass(rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
     SELECT (json_array_elements->>0)::bigint,
            (json_array_elements->>2)::timestamp with time zone,
-           (json_array_elements->>4)::char(4),
+           (json_array_elements->>4)::char(3),
            (json_array_elements->>5)::char(3), 
            (json_array_elements->>6)::numeric(13, 10), 
            (json_array_elements->>7)::numeric(14, 11), 
@@ -65,7 +65,7 @@ BEGIN
     INSERT INTO observations_galileo(rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
     SELECT (json_array_elements->>0)::bigint,
            (json_array_elements->>2)::timestamp with time zone,
-           (json_array_elements->>4)::char(4),
+           (json_array_elements->>4)::char(3),
            (json_array_elements->>5)::char(3), 
            (json_array_elements->>6)::numeric(13, 10), 
            (json_array_elements->>7)::numeric(14, 11), 
@@ -85,7 +85,7 @@ BEGIN
     INSERT INTO observations_beidou (rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
     SELECT (json_array_elements->>0)::bigint,
            (json_array_elements->>2)::timestamp with time zone,
-           (json_array_elements->>4)::char(4),
+           (json_array_elements->>4)::char(3),
            (json_array_elements->>5)::char(3), 
            (json_array_elements->>6)::numeric(13, 10), 
            (json_array_elements->>7)::numeric(14, 11), 
@@ -105,7 +105,7 @@ BEGIN
     INSERT INTO observations_qzss (rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
     SELECT (json_array_elements->>0)::bigint,
            (json_array_elements->>2)::timestamp with time zone,
-           (json_array_elements->>4)::char(4),
+           (json_array_elements->>4)::char(3),
            (json_array_elements->>5)::char(3), 
            (json_array_elements->>6)::numeric(13, 10), 
            (json_array_elements->>7)::numeric(14, 11), 
@@ -125,7 +125,7 @@ BEGIN
     INSERT INTO observations_sbas(rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
     SELECT (json_array_elements->>0)::bigint,
            (json_array_elements->>2)::timestamp with time zone,
-           (json_array_elements->>4)::char(4),
+           (json_array_elements->>4)::char(3),
            (json_array_elements->>5)::char(3), 
            (json_array_elements->>6)::numeric(13, 10), 
            (json_array_elements->>7)::numeric(14, 11), 
