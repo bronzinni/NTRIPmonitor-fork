@@ -26,6 +26,7 @@ services:
             - ./initdb/14-observations_beidou.sql:/docker-entrypoint-initdb.d/14-observations_beidou.sql
             - ./initdb/15-observations_qzss.sql:/docker-entrypoint-initdb.d/15-observations_qzss.sql
             - ./initdb/16-observations_sbas.sql:/docker-entrypoint-initdb.d/16-observations_sbas.sql
+            - ./initdb/21-ephemerides_keplerian.sql:/docker-entrypoint-initdb.d/21-ephemerides_keplerian.sql
             - ./initdb/30-connection_logger.sql:/docker-entrypoint-initdb.d/30-connection_logger.sql
             - ./initdb/99-stored_procedures.sql:/docker-entrypoint-initdb.d/99-stored_procedures.sql
         logging:

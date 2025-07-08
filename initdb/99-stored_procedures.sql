@@ -1,3 +1,47 @@
+CREATE OR REPLACE FUNCTION public.insert_caster(casterData JSON, OUT casterId INT)
+RETURNS INT
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- Insert into casters and get the ID
+    INSERT INTO casters(caster, host, username)
+    VALUES (
+        (casterData->>0)::text, 
+        (casterData->>1)::text,
+        (casterData->>2)::text
+    )
+    ON CONFLICT (caster, host, username) DO UPDATE 
+    SET caster = EXCLUDED.caster -- Nødvendig for at få returneret den eksisterende casters id
+    RETURNING caster_id INTO casterId;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION public.insert_mountpoints(mountpointTable JSON, OUT mountpoint_ids INT[])
+RETURNS INT[]
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    WITH insertion AS (
+        INSERT INTO mountpoints (caster_id, sitename, city, countrycode, latitude, longitude, receiver, rtcm_version)
+        SELECT (json_array_elements->>'caster_id')::INT,
+            (json_array_elements->>'sitename')::TEXT,
+            (json_array_elements->>'city')::TEXT,
+            (json_array_elements->>'countrycode')::TEXT,
+            (json_array_elements->>'latitude')::DECIMAL(7,4),
+            (json_array_elements->>'longitude')::DECIMAL(7,4),
+            (json_array_elements->>'receiver')::TEXT,
+            (json_array_elements->>'rtcm_version')::TEXT
+        FROM json_array_elements(mountpointTable)
+        ON CONFLICT (caster_id, sitename) DO UPDATE
+        SET caster_id = EXCLUDED.caster_id -- Necessary for procedure to return existing mountpoint_id
+        RETURNING mountpoint_id
+    )
+    SELECT array_agg(mountpoint_id) FROM insertion INTO mountpoint_ids;
+END;
+$$;
+
+
 CREATE OR REPLACE FUNCTION public.insert_rtcm_messages(decodedframes json, OUT rtcm_ids BIGINT[])
  RETURNS BIGINT[]
  LANGUAGE plpgsql
@@ -137,48 +181,44 @@ END;
 $$;
 
 
-CREATE OR REPLACE FUNCTION public.insert_caster(casterData JSON, OUT casterId INT)
-RETURNS INT
-LANGUAGE plpgsql
+CREATE OR REPLACE FUNCTION public.insert_ephemerides_keplerian(decodedObsFrame json)
+ RETURNS VOID
+ LANGUAGE plpgsql
 AS $$
 BEGIN
-    -- Insert into casters and get the ID
-    INSERT INTO casters(caster, host, username)
-    VALUES (
-        (casterData->>0)::text, 
-        (casterData->>1)::text,
-        (casterData->>2)::text
-    )
-    ON CONFLICT (caster, host, username) DO UPDATE 
-    SET caster = EXCLUDED.caster -- Nødvendig for at få returneret den eksisterende casters id
-    RETURNING caster_id INTO casterId;
+    INSERT INTO ephemerides_keplerian(rtcm_id, obs_epoch, sat_id, idot, iode, toc, af2, af1, af0, iodc, crs, deltan, M0, cuc, ecc, cus, sqrta, toe, cic, omega0, cis, i0, crc, omega, omegadot)
+    SELECT (json_array_elements->>0)::bigint,
+           (json_array_elements->>1)::timestamp with time zone,
+           (json_array_elements->>2)::char(3),
+           (json_array_elements->>3)::double precision,
+           (json_array_elements->>4)::integer, 
+           (json_array_elements->>5)::double precision, 
+           (json_array_elements->>6)::double precision, 
+           (json_array_elements->>7)::double precision, 
+           (json_array_elements->>8)::double precision, 
+           (json_array_elements->>9)::integer, 
+
+           (json_array_elements->>10)::double precision,
+           (json_array_elements->>11)::double precision, 
+           (json_array_elements->>12)::double precision,
+           (json_array_elements->>13)::double precision, 
+           (json_array_elements->>14)::double precision,
+           (json_array_elements->>15)::double precision, 
+           (json_array_elements->>16)::double precision,
+
+           (json_array_elements->>17)::double precision, 
+
+           (json_array_elements->>18)::double precision,
+           (json_array_elements->>19)::double precision, 
+           (json_array_elements->>20)::double precision,
+           (json_array_elements->>21)::double precision, 
+           (json_array_elements->>22)::double precision,
+           (json_array_elements->>23)::double precision, 
+           (json_array_elements->>24)::double precision
+    FROM json_array_elements(decodedObsFrame);
 END;
 $$;
 
-
-CREATE OR REPLACE FUNCTION public.insert_mountpoints(mountpointTable JSON, OUT mountpoint_ids INT[])
-RETURNS INT[]
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    WITH insertion AS (
-        INSERT INTO mountpoints (caster_id, sitename, city, countrycode, latitude, longitude, receiver, rtcm_version)
-        SELECT (json_array_elements->>'caster_id')::INT,
-            (json_array_elements->>'sitename')::TEXT,
-            (json_array_elements->>'city')::TEXT,
-            (json_array_elements->>'countrycode')::TEXT,
-            (json_array_elements->>'latitude')::DECIMAL(7,4),
-            (json_array_elements->>'longitude')::DECIMAL(7,4),
-            (json_array_elements->>'receiver')::TEXT,
-            (json_array_elements->>'rtcm_version')::TEXT
-        FROM json_array_elements(mountpointTable)
-        ON CONFLICT (caster_id, sitename) DO UPDATE
-        SET caster_id = EXCLUDED.caster_id -- Necessary for procedure to return existing mountpoint_id
-        RETURNING mountpoint_id
-    )
-    SELECT array_agg(mountpoint_id) FROM insertion INTO mountpoint_ids;
-END;
-$$;
 
 
 CREATE OR REPLACE FUNCTION public.insert_disconnect_log(logData JSON, OUT log_id INT)

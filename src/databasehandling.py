@@ -127,6 +127,8 @@ class NtripObservationHandler(DatabaseHandler):
         1011: "insert_observations_glonass",
         1012: "insert_observations_glonass",
 
+        1019: "insert_ephemerides_keplerian",
+
         1071: "insert_observations_gps",
         1072: "insert_observations_gps",
         1073: "insert_observations_gps",
@@ -212,7 +214,7 @@ class NtripObservationHandler(DatabaseHandler):
                     )
                     if stored_procedure is None:
                         logging.error(
-                            f"No stored procedure found for RTCM message identifier: {decodedFrames[index]['msg_type']}"
+                            f"No stored procedure found for RTCM message identifier: {decodedFrames[index]['msg_type']}."
                         )
                         continue
 

@@ -131,20 +131,25 @@ class Rtcm3:
             satData = read_sat_data(head, obs_list)
 
         elif messageType == 1005:
-            head = message.readlist(self.__msg1005)
-            ecefX = head[7]
-            ecefY = head[9]
-            ecefZ = head[10]
+            obs = message.readlist(self.__msg1005)
+            ecefX = obs[7]
+            ecefY = obs[9]
+            ecefZ = obs[10]
 
             satData = [ecefX, ecefY, ecefZ]
         elif messageType == 1006:
-            head = message.readlist(self.__msg1006)
-            ecefX = head[7]
-            ecefY = head[9]
-            ecefZ = head[10]
-            antHgt = head[11]
+            obs = message.readlist(self.__msg1006)
+            ecefX = obs[7]
+            ecefY = obs[9]
+            ecefZ = obs[10]
+            antHgt = obs[11]
 
             satData = [ecefX, ecefY, ecefZ, antHgt]
+
+        elif messageType == 1019:
+            obs = message.readlist(self.__msg1019)
+            head = obs[0:5]
+            satData = obs[5:27]
 
         elif (
             (1071 <= messageType <= 1077)
@@ -354,6 +359,19 @@ class Rtcm3:
         "bool, int:38, bool, "
         "pad:1, int:38, pad:2, int:38, "
         "uint:16"
+    )
+
+    __msg1019 = (
+        "uint:12, uint:6, uint:10, "
+        "uint:4, bin:2, int:14, "
+        "uint:8, uint:16, int:8, "
+        "int:16, int:22, uint:10, int:16, "
+        "int:16, int:32, int:16, "
+        "uint:32, int:16, uint:32, "
+        "uint:16, int:16, int:32, "
+        "int:16, int:32, int:16, "
+        "int:32, int:24, int:8, "
+        "uint:6, bool, bool, "
     )
 
     # MSM messages

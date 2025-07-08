@@ -1,0 +1,32 @@
+CREATE TABLE IF NOT EXISTS ephemerides_keplerian(
+    nav_id BIGSERIAL,
+    rtcm_id BIGINT, -- REFERENCES rtcm_messages(rtcm_id) ON DELETE CASCADE,
+    obs_epoch TIMESTAMPTZ,
+    sat_id CHAR(3),
+
+    idot DOUBLE PRECISION,
+    iode INTEGER,
+    toc DOUBLE PRECISION,
+    af2 DOUBLE PRECISION,
+    af1 DOUBLE PRECISION,
+    af0 DOUBLE PRECISION,
+    iodc INTEGER,
+    crs DOUBLE PRECISION,
+    deltan DOUBLE PRECISION,
+    M0 DOUBLE PRECISION,
+    cuc DOUBLE PRECISION,
+    ecc DOUBLE PRECISION,
+    cus DOUBLE PRECISION,
+    sqrta DOUBLE PRECISION,
+    toe DOUBLE PRECISION,
+    cic DOUBLE PRECISION,
+    omega0 DOUBLE PRECISION,
+    cis DOUBLE PRECISION,
+    i0 DOUBLE PRECISION,
+    crc DOUBLE PRECISION,
+    omega DOUBLE PRECISION,
+    omegadot DOUBLE PRECISION,
+    PRIMARY KEY (nav_id, rtcm_id)
+);
+
+CREATE INDEX ON ephemerides_keplerian(rtcm_id);

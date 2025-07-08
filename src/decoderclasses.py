@@ -55,7 +55,7 @@ class Decoder(ABC):
                     if decodedObs is None or not decodedObs:
                         return decodedFrame, None
                 except Exception as error:
-                    logging.error(f"Failed to decode RTCM OBS frame with error: {error}")
+                    logging.error(f"Failed to decode RTCM observation frame with error: {error}")
                     return decodedFrame, None
         return decodedFrame, decodedObs
 
@@ -97,7 +97,6 @@ class DecoderPOS(Decoder):
         self.mountPoint = params['mountpoint_id']
         self.messageType = params['msg_type']
         self.decodedObs = []
-        self.table = []
 
     def decode(self):
         try:
@@ -120,6 +119,45 @@ class DecoderPOS(Decoder):
             logging.error(f"Failed to decode ARP message {self.messageType} with error: {error}. Setting observation to None.")
             self.decodedObs = None
         
+        return {"decodedObs": self.decodedObs}
+
+class DecoderKepler(Decoder):
+    def __init__(self, params):
+        super().__init__(params)
+        self.data = params['data']
+        self.mountPoint = params['mountpoint_id']
+        self.messageType = params['msg_type']
+        self.decodedObs = []
+
+    def decode(self):
+        idot = self.data[1][0] * pow(2, -43) # Rate of Inclination Angle
+        iode = self.data[1][1] # Issue of Data (Ephemeris)
+        toc = self.data[1][2] * pow(2, 4)
+        af2 = self.data[1][3] * pow(2, -55)
+        af1 = self.data[1][4] * pow(2, -43)
+        af0 = self.data[1][5] * pow(2, -31)
+        iodc = self.data[1][6]
+        crs = self.data[1][7] * pow(2, -5) # Amplitude of the Sine Harmonic Correction Term to the Orbit Radius
+        deltan = self.data[1][8] * pow(2, -43) # Mean Motion Difference From Computed Value
+        M0 = self.data[1][9] * pow(2, -31) # Mean Anomaly at Reference Time
+        cuc = self.data[1][10] * pow(2, -29) # Amplitude of the Cosine Harmonic Correction Term to the Argument of Latitude
+        ecc = self.data[1][11] * pow(2, -33) # Eccentricity
+        cus = self.data[1][12] * pow(2, -29) # Amplitude of the Sine Harmonic Correction Term to the Argument of Latitude
+        sqrta = self.data[1][13] * pow(2, -19) # Square Root of the Semi-Major Axis
+        toe = self.data[1][14] * pow(2, 4) # Reference Time Ephemeris
+        cic = self.data[1][15] * pow(2, -29) # Amplitude of the Cosine Harmonic Correction Term to the Angle of Inclination
+        omega0 = self.data[1][16] * pow(2, -31) # Longitude of Ascending Node of Orbit Plane at Weekly Epoch
+        cis = self.data[1][17] * pow(2, -29) # Amplitude of the Sine Harmonic Correction Term to the Angle of Inclination
+        i0 = self.data[1][18] * pow(2, -31) # Inclination Angle at Reference Time
+        crc = self.data[1][19] * pow(2, -5) # Amplitude of the Cosine Harmonic Correction Term to the Orbit Radius
+        omega = self.data[1][20] * pow(2, -31) # Argument of Perigee
+        omegadot = self.data[1][21] * pow(2, -43) # Rate of Right Ascension
+
+        obsEpochStr = DecoderMSM.gnssEpochStr(self.messageType, toe / 1000.0)
+        sat_id = 'G' + str(self.data[0][1])
+
+        self.decodedObs = [(obsEpochStr, sat_id, idot, iode, toc, af2, af1, af0, iodc, crs, deltan, M0, cuc, ecc, cus, sqrta, toe, cic, omega0, cis, i0, crc, omega, omegadot)]
+
         return {"decodedObs": self.decodedObs}
 
 class DecoderMSM(Decoder):
@@ -251,6 +289,7 @@ class DecoderMSM(Decoder):
 DECODER_MAP = {
     1005: DecoderPOS,
     1006: DecoderPOS,
+    1019: DecoderKepler,
     1071: DecoderMSM,
     1072: DecoderMSM,
     1073: DecoderMSM,
