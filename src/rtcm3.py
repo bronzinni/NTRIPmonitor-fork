@@ -374,6 +374,62 @@ class Rtcm3:
         "uint:6, bool, bool, "
     )
 
+    # GLONASS uses the type intS, which is not natively supported in bitstream, instead combine bool, uint:N-1
+    __msg1020 = (
+        "uint:12, uint:6, uint:5, "
+        "bool, bool, bin:2, "
+        "bin:12, bool, bool, "
+        "uint:7, "
+        "bool, uint:23, " # intS24
+        "bool, uint:26, " # intS27
+        "bool, uint:4, " # intS5
+        "bool, uint:23, " # intS24
+        "bool, uint:26, " # intS27
+        "bool, uint:4, " # intS5
+        "bool, uint:23, " # intS24
+        "bool, uint:26, " # intS27
+        "bool, uint:4, " # intS5
+        "bool, "
+        "bool, uint:11, " # intS11
+        "bin:2, bool, "
+        "bool, uint:21, " # intS22
+        "bool, uint:4, " # intS5
+        "uint:5, bool, uint:4, "
+        "uint:11, bin:2, bool, "
+        "uint:11, "
+        "bool, uint:31, " # intS32
+        "uint:5, "
+        "bool, uint:21, " # intS22
+        "bool, bin:7, "
+    )
+
+    __msg1042 = (
+        "uint:12, uint:6, uint:13, "
+        "bin:4, int:14, uint:5, "
+        "uint:17, int:11, int:22, "
+        "int:24, uint:5, int:18, int:16, "
+        "int:32, int:18, uint:32, "
+        "int:18, uint:32, uint:17, "
+        "int:18, int:32, int:18, "
+        "int:32, int:18, int:32, "
+        "int:24, int:10, int:10, "
+        "bool"
+    )
+
+
+
+    __msg1045 = (
+        "uint:12, uint:6, uint:12, "
+        "uint:10, uint:8, int:14, "
+        "uint:14, int:6, int:21, "
+        "int:31, int:16, int:16, int:32, "
+        "int:16, uint:32, int:16, "
+        "uint:32, uint:14, int:16, "
+        "int:32, int:16, int:32, "
+        "int:24, int:10, bin:2, "
+        "bool, bin:7, "
+    )
+
     # MSM messages
     __msgMsmHead = (
         "uint:12, uint:12, uint:30, "
