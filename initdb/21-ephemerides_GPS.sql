@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS ephemerides_keplerian(
+CREATE TABLE IF NOT EXISTS ephemerides_GPS(
     nav_id BIGSERIAL,
     rtcm_id BIGINT, -- REFERENCES rtcm_messages(rtcm_id) ON DELETE CASCADE,
     obs_epoch TIMESTAMPTZ,
@@ -29,4 +29,4 @@ CREATE TABLE IF NOT EXISTS ephemerides_keplerian(
     PRIMARY KEY (nav_id, rtcm_id)
 );
 
-CREATE INDEX ON ephemerides_keplerian(rtcm_id);
+CREATE INDEX ON ephemerides_GPS(rtcm_id);

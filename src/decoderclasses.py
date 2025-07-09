@@ -154,7 +154,7 @@ class DecoderKepler(Decoder):
         omegadot = self.data[1][21] * pow(2, -43) # Rate of Right Ascension
 
         obsEpochStr = DecoderMSM.gnssEpochStr(self.messageType, toe / 1000.0)
-        sat_id = 'G' + str(self.data[0][1])
+        sat_id = f'G{self.data[0][1]:02d}'
 
         self.decodedObs = [(obsEpochStr, sat_id, idot, iode, toc, af2, af1, af0, iodc, crs, deltan, M0, cuc, ecc, cus, sqrta, toe, cic, omega0, cis, i0, crc, omega, omegadot)]
 
