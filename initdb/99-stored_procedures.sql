@@ -258,10 +258,10 @@ BEGIN
     (rtcm_id, mountpoint_id, ecef_x, ecef_y, ecef_z, antHgt)
     SELECT (json_array_elements->>0)::bigint, 
            (json_array_elements->>2)::int, 
-           (json_array_elements->>6)::double precision,
-           (json_array_elements->>7)::double precision,
-           (json_array_elements->>8)::double precision,
-           (json_array_elements->>9)::double precision
+           (json_array_elements->>3)::double precision,
+           (json_array_elements->>4)::double precision,
+           (json_array_elements->>5)::double precision,
+           (json_array_elements->>6)::double precision
     FROM json_array_elements(decodedObsFrame)
     ON CONFLICT (mountpoint_id) DO UPDATE SET
         rtcm_id = EXCLUDED.rtcm_id,
