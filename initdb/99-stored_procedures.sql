@@ -261,7 +261,7 @@ BEGIN
            (json_array_elements->>6)::double precision,
            (json_array_elements->>7)::double precision,
            (json_array_elements->>8)::double precision,
-           (json_array_elements->>9)::double precision,
+           (json_array_elements->>9)::double precision
     FROM json_array_elements(decodedObsFrame)
     ON CONFLICT (mountpoint_id) DO UPDATE SET
         rtcm_id = EXCLUDED.rtcm_id,
