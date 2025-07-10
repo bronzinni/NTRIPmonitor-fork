@@ -18,8 +18,8 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
+  "id": 2,
   "links": [],
-  "liveNow": false,
   "panels": [
     {
       "collapsed": false,
@@ -45,11 +45,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -58,6 +60,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -79,8 +82,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -106,10 +108,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
@@ -119,7 +123,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT $__timeGroupAlias(obs_epoch,$__interval),\r\nAVG(CASE WHEN sat_signal = 'L1C' then obs_snr END) AS \"L1C\",\r\nAVG(CASE WHEN sat_signal = 'L1P' then obs_snr END) AS \"L1P\",\r\nAVG(CASE WHEN sat_signal = 'L1W' then obs_snr END) AS \"L1W\",\r\nAVG(CASE WHEN sat_signal = 'L1S' then obs_snr END) AS \"L1S\",\r\nAVG(CASE WHEN sat_signal = 'L1L' then obs_snr END) AS \"L1L\",\r\nAVG(CASE WHEN sat_signal = 'L1X' then obs_snr END) AS \"L1X\"\r\n,\r\nAVG(CASE WHEN sat_signal = 'L2C' then obs_snr END) AS \"L2C\",\r\nAVG(CASE WHEN sat_signal = 'L2P' then obs_snr END) AS \"L2P\",\r\nAVG(CASE WHEN sat_signal = 'L2W' then obs_snr END) AS \"L2W\",\r\nAVG(CASE WHEN sat_signal = 'L2S' then obs_snr END) AS \"L2S\",\r\nAVG(CASE WHEN sat_signal = 'L2L' then obs_snr END) AS \"L2L\",\r\nAVG(CASE WHEN sat_signal = 'L2X' then obs_snr END) AS \"L2X\"\r\n,\r\nAVG(CASE WHEN sat_signal = 'L5I' then obs_snr END) AS \"L5I\",\r\nAVG(CASE WHEN sat_signal = 'L5Q' then obs_snr END) AS \"L5Q\",\r\nAVG(CASE WHEN sat_signal = 'L5X' then obs_snr END) AS \"L5X\"\r\nFROM gps_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) group by 1",
+          "rawSql": "SELECT $__timeGroupAlias(r.time_received,$__interval),\r\nAVG(CASE WHEN sat_signal = 'L1C' then obs_snr END) AS \"L1C\",\r\nAVG(CASE WHEN sat_signal = 'L1P' then obs_snr END) AS \"L1P\",\r\nAVG(CASE WHEN sat_signal = 'L1W' then obs_snr END) AS \"L1W\",\r\nAVG(CASE WHEN sat_signal = 'L1S' then obs_snr END) AS \"L1S\",\r\nAVG(CASE WHEN sat_signal = 'L1L' then obs_snr END) AS \"L1L\",\r\nAVG(CASE WHEN sat_signal = 'L1X' then obs_snr END) AS \"L1X\"\r\n,\r\nAVG(CASE WHEN sat_signal = 'L2C' then obs_snr END) AS \"L2C\",\r\nAVG(CASE WHEN sat_signal = 'L2P' then obs_snr END) AS \"L2P\",\r\nAVG(CASE WHEN sat_signal = 'L2W' then obs_snr END) AS \"L2W\",\r\nAVG(CASE WHEN sat_signal = 'L2S' then obs_snr END) AS \"L2S\",\r\nAVG(CASE WHEN sat_signal = 'L2L' then obs_snr END) AS \"L2L\",\r\nAVG(CASE WHEN sat_signal = 'L2X' then obs_snr END) AS \"L2X\"\r\n,\r\nAVG(CASE WHEN sat_signal = 'L5I' then obs_snr END) AS \"L5I\",\r\nAVG(CASE WHEN sat_signal = 'L5Q' then obs_snr END) AS \"L5Q\",\r\nAVG(CASE WHEN sat_signal = 'L5X' then obs_snr END) AS \"L5X\"\r\nFROM observations_gps o\r\nJOIN\r\n    rtcm_messages r ON o.rtcm_id = r.rtcm_id\r\nJOIN\r\n    mountpoints m ON r.mountpoint_id = m.mountpoint_id\r\nWHERE\r\n  m.mountpoint_id = '$selected_mountpoint' AND\r\n  $__timeFilter(r.time_received)\r\nGROUP BY 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -154,11 +158,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -167,6 +173,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -188,8 +195,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -215,10 +221,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
@@ -228,7 +236,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT $__timeGroupAlias(obs_epoch,$__interval),\r\nAVG(CASE WHEN sat_signal = 'G1C' then obs_snr END) AS \"G1C\",\r\nAVG(CASE WHEN sat_signal = 'G1P' then obs_snr END) AS \"G1P\",\r\nAVG(CASE WHEN sat_signal = 'G2C' then obs_snr END) AS \"G2C\",\r\nAVG(CASE WHEN sat_signal = 'G2P' then obs_snr END) AS \"G2P\"\r\nFROM glonass_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) group by 1",
+          "rawSql": "SELECT $__timeGroupAlias(r.time_received,$__interval),\r\nAVG(CASE WHEN sat_signal = 'G1C' then obs_snr END) AS \"G1C\",\r\nAVG(CASE WHEN sat_signal = 'G1P' then obs_snr END) AS \"G1P\",\r\nAVG(CASE WHEN sat_signal = 'G2C' then obs_snr END) AS \"G2C\",\r\nAVG(CASE WHEN sat_signal = 'G2P' then obs_snr END) AS \"G2P\"\r\nFROM observations_GLO o\r\nJOIN\r\n    rtcm_messages r ON o.rtcm_id = r.rtcm_id\r\nJOIN\r\n    mountpoints m ON r.mountpoint_id = m.mountpoint_id\r\nWHERE\r\n  m.mountpoint_id = '$selected_mountpoint' AND\r\n  $__timeFilter(r.time_received)\r\nGROUP BY 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -263,11 +271,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -276,6 +286,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -297,8 +308,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -324,10 +334,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
@@ -337,7 +349,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT $__timeGroupAlias(obs_epoch,$__interval),\r\nAVG(CASE WHEN sat_signal = 'E1C' then obs_snr END) AS \"E1C\",\r\nAVG(CASE WHEN sat_signal = 'E1A' then obs_snr END) AS \"E1A\",\r\nAVG(CASE WHEN sat_signal = 'E1B' then obs_snr END) AS \"E1B\",\r\nAVG(CASE WHEN sat_signal = 'E1X' then obs_snr END) AS \"E1X\",\r\nAVG(CASE WHEN sat_signal = 'E1Z' then obs_snr END) AS \"E1Z\",\r\n\r\nAVG(CASE WHEN sat_signal = 'E6C' then obs_snr END) AS \"E6C\",\r\nAVG(CASE WHEN sat_signal = 'E6A' then obs_snr END) AS \"E6A\",\r\nAVG(CASE WHEN sat_signal = 'E6B' then obs_snr END) AS \"E6B\",\r\nAVG(CASE WHEN sat_signal = 'E6X' then obs_snr END) AS \"E6X\",\r\nAVG(CASE WHEN sat_signal = 'E6Z' then obs_snr END) AS \"E6Z\",\r\n\r\nAVG(CASE WHEN sat_signal = 'E7I' then obs_snr END) AS \"E7I\",\r\nAVG(CASE WHEN sat_signal = 'E7Q' then obs_snr END) AS \"E7Q\",\r\nAVG(CASE WHEN sat_signal = 'E7X' then obs_snr END) AS \"E7X\",\r\n\r\nAVG(CASE WHEN sat_signal = 'E8I' then obs_snr END) AS \"E8I\",\r\nAVG(CASE WHEN sat_signal = 'E8Q' then obs_snr END) AS \"E8Q\",\r\nAVG(CASE WHEN sat_signal = 'E8X' then obs_snr END) AS \"E8X\",\r\n\r\nAVG(CASE WHEN sat_signal = 'E5I' then obs_snr END) AS \"E5I\",\r\nAVG(CASE WHEN sat_signal = 'E5Q' then obs_snr END) AS \"E5Q\",\r\nAVG(CASE WHEN sat_signal = 'E5X' then obs_snr END) AS \"E5X\"\r\nFROM galileo_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) group by 1",
+          "rawSql": "SELECT $__timeGroupAlias(r.time_received,$__interval),\r\nAVG(CASE WHEN sat_signal = 'E1C' then obs_snr END) AS \"E1C\",\r\nAVG(CASE WHEN sat_signal = 'E1A' then obs_snr END) AS \"E1A\",\r\nAVG(CASE WHEN sat_signal = 'E1B' then obs_snr END) AS \"E1B\",\r\nAVG(CASE WHEN sat_signal = 'E1X' then obs_snr END) AS \"E1X\",\r\nAVG(CASE WHEN sat_signal = 'E1Z' then obs_snr END) AS \"E1Z\",\r\n\r\nAVG(CASE WHEN sat_signal = 'E6C' then obs_snr END) AS \"E6C\",\r\nAVG(CASE WHEN sat_signal = 'E6A' then obs_snr END) AS \"E6A\",\r\nAVG(CASE WHEN sat_signal = 'E6B' then obs_snr END) AS \"E6B\",\r\nAVG(CASE WHEN sat_signal = 'E6X' then obs_snr END) AS \"E6X\",\r\nAVG(CASE WHEN sat_signal = 'E6Z' then obs_snr END) AS \"E6Z\",\r\n\r\nAVG(CASE WHEN sat_signal = 'E7I' then obs_snr END) AS \"E7I\",\r\nAVG(CASE WHEN sat_signal = 'E7Q' then obs_snr END) AS \"E7Q\",\r\nAVG(CASE WHEN sat_signal = 'E7X' then obs_snr END) AS \"E7X\",\r\n\r\nAVG(CASE WHEN sat_signal = 'E8I' then obs_snr END) AS \"E8I\",\r\nAVG(CASE WHEN sat_signal = 'E8Q' then obs_snr END) AS \"E8Q\",\r\nAVG(CASE WHEN sat_signal = 'E8X' then obs_snr END) AS \"E8X\",\r\n\r\nAVG(CASE WHEN sat_signal = 'E5I' then obs_snr END) AS \"E5I\",\r\nAVG(CASE WHEN sat_signal = 'E5Q' then obs_snr END) AS \"E5Q\",\r\nAVG(CASE WHEN sat_signal = 'E5X' then obs_snr END) AS \"E5X\"\r\nFROM observations_GAL o\r\nJOIN\r\n    rtcm_messages r ON o.rtcm_id = r.rtcm_id\r\nJOIN\r\n    mountpoints m ON r.mountpoint_id = m.mountpoint_id\r\nWHERE\r\n  m.mountpoint_id = '$selected_mountpoint' AND\r\n  $__timeFilter(r.time_received)\r\nGROUP BY 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -372,11 +384,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -385,6 +399,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -406,8 +421,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -433,10 +447,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
@@ -446,7 +462,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT $__timeGroupAlias(obs_epoch,$__interval), \r\nAVG(CASE WHEN sat_signal = 'B2I' then obs_snr END) AS \"B2I\",\r\nAVG(CASE WHEN sat_signal = 'B2Q' then obs_snr END) AS \"B2Q\",\r\nAVG(CASE WHEN sat_signal = 'B2X' then obs_snr END) AS \"B2X\",\r\n\r\nAVG(CASE WHEN sat_signal = 'B6I' then obs_snr END) AS \"B6I\",\r\nAVG(CASE WHEN sat_signal = 'B6Q' then obs_snr END) AS \"B6Q\",\r\nAVG(CASE WHEN sat_signal = 'B6X' then obs_snr END) AS \"B6X\",\r\n\r\nAVG(CASE WHEN sat_signal = 'B7I' then obs_snr END) AS \"B7I\",\r\nAVG(CASE WHEN sat_signal = 'B7Q' then obs_snr END) AS \"B7Q\",\r\nAVG(CASE WHEN sat_signal = 'B7X' then obs_snr END) AS \"B7X\",\r\n\r\nAVG(CASE WHEN sat_signal = 'B5D' then obs_snr END) AS \"B5D\",\r\nAVG(CASE WHEN sat_signal = 'B5P' then obs_snr END) AS \"B5P\",\r\nAVG(CASE WHEN sat_signal = 'B5X' then obs_snr END) AS \"B5X\",\r\nAVG(CASE WHEN sat_signal = 'B7D' then obs_snr END) AS \"B7D\",\r\n\r\nAVG(CASE WHEN sat_signal = 'B1D' then obs_snr END) AS \"B1D\",\r\nAVG(CASE WHEN sat_signal = 'B1P' then obs_snr END) AS \"B1P\",\r\nAVG(CASE WHEN sat_signal = 'B1X' then obs_snr END) AS \"B1X\"\r\nFROM beidou_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) group by 1",
+          "rawSql": "SELECT $__timeGroupAlias(r.time_received,$__interval),\r\nAVG(CASE WHEN sat_signal = 'B2I' then obs_snr END) AS \"B2I\",\r\nAVG(CASE WHEN sat_signal = 'B2Q' then obs_snr END) AS \"B2Q\",\r\nAVG(CASE WHEN sat_signal = 'B2X' then obs_snr END) AS \"B2X\",\r\n\r\nAVG(CASE WHEN sat_signal = 'B6I' then obs_snr END) AS \"B6I\",\r\nAVG(CASE WHEN sat_signal = 'B6Q' then obs_snr END) AS \"B6Q\",\r\nAVG(CASE WHEN sat_signal = 'B6X' then obs_snr END) AS \"B6X\",\r\n\r\nAVG(CASE WHEN sat_signal = 'B7I' then obs_snr END) AS \"B7I\",\r\nAVG(CASE WHEN sat_signal = 'B7Q' then obs_snr END) AS \"B7Q\",\r\nAVG(CASE WHEN sat_signal = 'B7X' then obs_snr END) AS \"B7X\",\r\n\r\nAVG(CASE WHEN sat_signal = 'B5D' then obs_snr END) AS \"B5D\",\r\nAVG(CASE WHEN sat_signal = 'B5P' then obs_snr END) AS \"B5P\",\r\nAVG(CASE WHEN sat_signal = 'B5X' then obs_snr END) AS \"B5X\",\r\nAVG(CASE WHEN sat_signal = 'B7D' then obs_snr END) AS \"B7D\",\r\n\r\nAVG(CASE WHEN sat_signal = 'B1D' then obs_snr END) AS \"B1D\",\r\nAVG(CASE WHEN sat_signal = 'B1P' then obs_snr END) AS \"B1P\",\r\nAVG(CASE WHEN sat_signal = 'B1X' then obs_snr END) AS \"B1X\"\r\nFROM observations_BDS o\r\nJOIN\r\n    rtcm_messages r ON o.rtcm_id = r.rtcm_id\r\nJOIN\r\n    mountpoints m ON r.mountpoint_id = m.mountpoint_id\r\nWHERE\r\n  m.mountpoint_id = '$selected_mountpoint' AND\r\n  $__timeFilter(r.time_received)\r\nGROUP BY 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -494,11 +510,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -507,6 +525,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -528,8 +547,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -555,10 +573,12 @@
           "showLegend": false
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
@@ -568,7 +588,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  SUM(POWER(subquery.derivative,2)) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LAG(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((obs_epoch - LAG(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))))\r\n    as derivative\r\n  FROM\r\n    gps_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
+          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  SUM(POWER(subquery.derivative,2)) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    o.obs_epoch,\r\n    ( o.obs_snr - LAG(o.obs_snr, 1, NULL) OVER (PARTITION BY o.sat_id, o.sat_signal ORDER BY o.obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((o.obs_epoch - LAG(o.obs_epoch, 1, NULL) OVER (PARTITION BY o.sat_id, o.sat_signal ORDER BY o.obs_epoch))))\r\n    as derivative\r\n  FROM\r\n    observations_gps o\r\n  JOIN\r\n      rtcm_messages r ON o.rtcm_id = r.rtcm_id\r\n  JOIN\r\n      mountpoints m ON r.mountpoint_id = m.mountpoint_id\r\n  WHERE\r\n    m.mountpoint_id = '$selected_mountpoint' AND\r\n    $__timeFilter(o.obs_epoch)\r\n) subquery\r\nGROUP BY 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -603,11 +623,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -616,6 +638,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -637,8 +660,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -664,10 +686,12 @@
           "showLegend": false
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
@@ -677,7 +701,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  SUM(POWER(subquery.derivative,2)) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LAG(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((obs_epoch - LAG(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))))\r\n    as derivative\r\n  FROM\r\n    glonass_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
+          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  SUM(POWER(subquery.derivative,2)) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    o.obs_epoch,\r\n    ( o.obs_snr - LAG(o.obs_snr, 1, NULL) OVER (PARTITION BY o.sat_id, o.sat_signal ORDER BY o.obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((o.obs_epoch - LAG(o.obs_epoch, 1, NULL) OVER (PARTITION BY o.sat_id, o.sat_signal ORDER BY o.obs_epoch))))\r\n    as derivative\r\n  FROM\r\n    observations_GLO o\r\n  JOIN\r\n      rtcm_messages r ON o.rtcm_id = r.rtcm_id\r\n  JOIN\r\n      mountpoints m ON r.mountpoint_id = m.mountpoint_id\r\n  WHERE\r\n    m.mountpoint_id = '$selected_mountpoint' AND\r\n    $__timeFilter(o.obs_epoch)\r\n) subquery\r\nGROUP BY 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -712,11 +736,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -725,6 +751,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -746,8 +773,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -773,10 +799,12 @@
           "showLegend": false
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
@@ -786,7 +814,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  SUM(POWER(subquery.derivative,2)) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LAG(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((obs_epoch - LAG(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))))\r\n    as derivative\r\n  FROM\r\n    galileo_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
+          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  SUM(POWER(subquery.derivative,2)) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    o.obs_epoch,\r\n    ( o.obs_snr - LAG(o.obs_snr, 1, NULL) OVER (PARTITION BY o.sat_id, o.sat_signal ORDER BY o.obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((o.obs_epoch - LAG(o.obs_epoch, 1, NULL) OVER (PARTITION BY o.sat_id, o.sat_signal ORDER BY o.obs_epoch))))\r\n    as derivative\r\n  FROM\r\n    observations_GAL o\r\n  JOIN\r\n      rtcm_messages r ON o.rtcm_id = r.rtcm_id\r\n  JOIN\r\n      mountpoints m ON r.mountpoint_id = m.mountpoint_id\r\n  WHERE\r\n    m.mountpoint_id = '$selected_mountpoint' AND\r\n    $__timeFilter(o.obs_epoch)\r\n) subquery\r\nGROUP BY 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -821,11 +849,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -834,6 +864,7 @@
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -855,8 +886,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -882,10 +912,12 @@
           "showLegend": false
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
@@ -895,7 +927,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  SUM(POWER(subquery.derivative,2)) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    obs_epoch,\r\n    ( obs_snr - LAG(obs_snr, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((obs_epoch - LAG(obs_epoch, 1, NULL) OVER (PARTITION BY sat_id, sat_signal ORDER BY obs_epoch))))\r\n    as derivative\r\n  FROM\r\n    beidou_observations\r\n  WHERE\r\n    mountpoint = '$selected_mountpoint' AND\r\n    $__timeFilter(obs_epoch)\r\n) subquery\r\nGROUP BY 1",
+          "rawSql": "SELECT\r\n  $__timeGroupAlias(subquery.obs_epoch,$__interval),\r\n  SUM(POWER(subquery.derivative,2)) AS \"Rapid Change\"\r\nFROM \r\n(\r\n  SELECT\r\n    o.obs_epoch,\r\n    ( o.obs_snr - LAG(o.obs_snr, 1, NULL) OVER (PARTITION BY o.sat_id, o.sat_signal ORDER BY o.obs_epoch) ) /\r\n    EXTRACT(EPOCH FROM ((o.obs_epoch - LAG(o.obs_epoch, 1, NULL) OVER (PARTITION BY o.sat_id, o.sat_signal ORDER BY o.obs_epoch))))\r\n    as derivative\r\n  FROM\r\n    observations_bds o\r\n  JOIN\r\n      rtcm_messages r ON o.rtcm_id = r.rtcm_id\r\n  JOIN\r\n      mountpoints m ON r.mountpoint_id = m.mountpoint_id\r\n  WHERE\r\n    m.mountpoint_id = '$selected_mountpoint' AND\r\n    $__timeFilter(o.obs_epoch)\r\n) subquery\r\nGROUP BY 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -920,15 +952,15 @@
       "type": "timeseries"
     }
   ],
+  "preload": false,
   "refresh": false,
-  "schemaVersion": 38,
-  "style": "dark",
+  "schemaVersion": 41,
   "tags": [],
   "templating": {
     "list": [
       {
+        "allowCustomValue": false,
         "current": {
-          "selected": true,
           "text": "TEJH00DNK",
           "value": "TEJH00DNK"
         },
@@ -936,23 +968,20 @@
           "type": "postgres",
           "uid": "UYgXEmhnz"
         },
-        "definition": "SELECT sc.mountpoint\nFROM sourcetable_constants sc\nWHERE mountpoint IN (SELECT DISTINCT mountpoint FROM rtcm_packages)",
-        "hide": 0,
+        "definition": "SELECT mountpoint_id AS __value, sitename AS __text\nFROM mountpoints\nWHERE mountpoint_id IN (SELECT DISTINCT mountpoint_id FROM rtcm_messages)",
         "includeAll": false,
         "label": "Mountpoint",
-        "multi": false,
         "name": "selected_mountpoint",
         "options": [],
-        "query": "SELECT sc.mountpoint\nFROM sourcetable_constants sc\nWHERE mountpoint IN (SELECT DISTINCT mountpoint FROM rtcm_packages)",
+        "query": "SELECT mountpoint_id AS __value, sitename AS __text\nFROM mountpoints\nWHERE mountpoint_id IN (SELECT DISTINCT mountpoint_id FROM rtcm_messages)",
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
         "sort": 1,
         "type": "query"
       },
       {
+        "allowCustomValue": false,
         "current": {
-          "selected": false,
           "text": "L1C",
           "value": "L1C"
         },
@@ -960,22 +989,19 @@
           "type": "postgres",
           "uid": "UYgXEmhnz"
         },
-        "definition": "SELECT DISTINCT sat_signal\nFROM gps_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) ORDER BY sat_signal",
+        "definition": "SELECT DISTINCT o.sat_signal\nFROM observations_gps o\nJOIN\n    rtcm_messages r ON o.rtcm_id = r.rtcm_id\nJOIN\n    mountpoints m ON r.mountpoint_id = m.mountpoint_id\nWHERE m.mountpoint_id = '$selected_mountpoint' AND \n$__timeFilter(r.time_received)\n ORDER BY o.sat_signal",
         "hide": 2,
         "includeAll": false,
-        "multi": false,
         "name": "signals_gps",
         "options": [],
-        "query": "SELECT DISTINCT sat_signal\nFROM gps_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) ORDER BY sat_signal",
+        "query": "SELECT DISTINCT o.sat_signal\nFROM observations_gps o\nJOIN\n    rtcm_messages r ON o.rtcm_id = r.rtcm_id\nJOIN\n    mountpoints m ON r.mountpoint_id = m.mountpoint_id\nWHERE m.mountpoint_id = '$selected_mountpoint' AND \n$__timeFilter(r.time_received)\n ORDER BY o.sat_signal",
         "refresh": 2,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
+        "sort": 1,
         "type": "query"
       },
       {
         "current": {
-          "selected": false,
           "text": "E1C",
           "value": "E1C"
         },
@@ -983,22 +1009,18 @@
           "type": "postgres",
           "uid": "UYgXEmhnz"
         },
-        "definition": "SELECT DISTINCT sat_signal\nFROM galileo_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) ORDER BY sat_signal",
+        "definition": "SELECT DISTINCT o.sat_signal\nFROM observations_galileo o\nJOIN\n    rtcm_messages r ON o.rtcm_id = r.rtcm_id\nJOIN\n    mountpoints m ON r.mountpoint_id = m.mountpoint_id\nWHERE m.mountpoint_id = '$selected_mountpoint' AND \n$__timeFilter(r.time_received)\n ORDER BY o.sat_signal",
         "hide": 2,
         "includeAll": false,
-        "multi": false,
         "name": "signals_gal",
         "options": [],
-        "query": "SELECT DISTINCT sat_signal\nFROM galileo_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) ORDER BY sat_signal",
+        "query": "SELECT DISTINCT o.sat_signal\nFROM observations_galileo o\nJOIN\n    rtcm_messages r ON o.rtcm_id = r.rtcm_id\nJOIN\n    mountpoints m ON r.mountpoint_id = m.mountpoint_id\nWHERE m.mountpoint_id = '$selected_mountpoint' AND \n$__timeFilter(r.time_received)\n ORDER BY o.sat_signal",
         "refresh": 2,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
         "type": "query"
       },
       {
         "current": {
-          "selected": false,
           "text": "G1C",
           "value": "G1C"
         },
@@ -1006,22 +1028,18 @@
           "type": "postgres",
           "uid": "UYgXEmhnz"
         },
-        "definition": "SELECT DISTINCT sat_signal\nFROM glonass_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) ORDER BY sat_signal",
+        "definition": "SELECT DISTINCT o.sat_signal\nFROM observations_glonass o\nJOIN\n    rtcm_messages r ON o.rtcm_id = r.rtcm_id\nJOIN\n    mountpoints m ON r.mountpoint_id = m.mountpoint_id\nWHERE m.mountpoint_id = '$selected_mountpoint' AND \n$__timeFilter(r.time_received)\n ORDER BY o.sat_signal",
         "hide": 2,
         "includeAll": false,
-        "multi": false,
         "name": "signals_glo",
         "options": [],
-        "query": "SELECT DISTINCT sat_signal\nFROM glonass_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) ORDER BY sat_signal",
+        "query": "SELECT DISTINCT o.sat_signal\nFROM observations_glonass o\nJOIN\n    rtcm_messages r ON o.rtcm_id = r.rtcm_id\nJOIN\n    mountpoints m ON r.mountpoint_id = m.mountpoint_id\nWHERE m.mountpoint_id = '$selected_mountpoint' AND \n$__timeFilter(r.time_received)\n ORDER BY o.sat_signal",
         "refresh": 2,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
         "type": "query"
       },
       {
         "current": {
-          "selected": false,
           "text": "L1C",
           "value": "L1C"
         },
@@ -1029,17 +1047,14 @@
           "type": "postgres",
           "uid": "UYgXEmhnz"
         },
-        "definition": "SELECT DISTINCT sat_signal\nFROM bds_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) ORDER BY sat_signal",
+        "definition": "SELECT DISTINCT o.sat_signal\nFROM observations_beidou o\nJOIN\n    rtcm_messages r ON o.rtcm_id = r.rtcm_id\nJOIN\n    mountpoints m ON r.mountpoint_id = m.mountpoint_id\nWHERE m.mountpoint_id = '$selected_mountpoint' AND \n$__timeFilter(r.time_received)\n ORDER BY o.sat_signal",
         "hide": 2,
         "includeAll": false,
-        "multi": false,
         "name": "signals_bds",
         "options": [],
-        "query": "SELECT DISTINCT sat_signal\nFROM bds_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) ORDER BY sat_signal",
+        "query": "SELECT DISTINCT o.sat_signal\nFROM observations_beidou o\nJOIN\n    rtcm_messages r ON o.rtcm_id = r.rtcm_id\nJOIN\n    mountpoints m ON r.mountpoint_id = m.mountpoint_id\nWHERE m.mountpoint_id = '$selected_mountpoint' AND \n$__timeFilter(r.time_received)\n ORDER BY o.sat_signal",
         "refresh": 2,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
         "type": "query"
       }
     ]
@@ -1052,6 +1067,5 @@
   "timezone": "",
   "title": "Disturbances",
   "uid": "a892c454-f104-4fd2-ab3c-24f41465349c",
-  "version": 1,
-  "weekStart": ""
+  "version": 2
 }
