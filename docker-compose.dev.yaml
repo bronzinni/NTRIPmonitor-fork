@@ -54,7 +54,7 @@ services:
         depends_on:
             - timescaledb
         ports:
-            - "18000:3000"
+            - "3000:3000"
         volumes:
             - ./initgrafana:/etc/grafana/provisioning:ro
         logging:

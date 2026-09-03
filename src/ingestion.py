@@ -78,6 +78,7 @@ async def watchdogHandler(
                     casterId, mountpoint = wantedTask
                     if mountpoint not in runningTaskNames:
                         casterSettings = casterSettingsDict[casterId]
+                        # BROKEN BECAUSE mountpoint HERE IS A STRING, NOT A CLASS INSTANCE
                         tasks[mountpoint] = asyncio.create_task(
                             procRtcmStream(
                                 casterSettings,
@@ -187,7 +188,7 @@ def mountpointSplitter(casterSettingsDict: dict, maxProcesses: int) -> list:
     """
 
     total_mountpoints = sum([len(caster.mountpoints) for caster in casterSettingsDict.values()])
-    mountpoints_per_proc = max(1, total_mountpoints // maxProcesses)
+    mountpoints_per_proc = total_mountpoints // maxProcesses + 1
 
     chunks = []
     chunk = []
@@ -200,13 +201,19 @@ def mountpointSplitter(casterSettingsDict: dict, maxProcesses: int) -> list:
             if space_in_chunk > remaining_in_caster:
                 chunk = chunk + caster.mountpoints[position_in_caster:position_in_caster + remaining_in_caster]
                 space_in_chunk = space_in_chunk - remaining_in_caster
+                position_in_caster = position_in_caster + remaining_in_caster
                 remaining_in_caster = 0
             if space_in_chunk <= remaining_in_caster:
                 chunk = chunk + caster.mountpoints[position_in_caster:position_in_caster + space_in_chunk]
                 chunks.append(chunk)
                 chunk = []
                 space_in_chunk = mountpoints_per_proc
+                position_in_caster = position_in_caster + space_in_chunk
                 remaining_in_caster = remaining_in_caster - space_in_chunk
+
+    # add last chunk
+    if len(chunk) > 0:
+        chunks.append(chunk)
 
     return chunks
 
@@ -623,7 +630,7 @@ class readerProcess(parallelProcess):
         )
 
     def __repr__(self):
-        return f"Reader ({self.process.name}, pid {self.process.pid}) with shared memory {hex(id(self.shared))} of mountpoints {self.mountpoints}"
+        return f"Reader ({self.process.name}, pid {self.process.pid}) with shared memory {hex(id(self.shared))} of mountpoints {[x.sitename for x in self.mountpoints]}"
 
 
 class decoderProcess(parallelProcess):
@@ -668,7 +675,7 @@ def RunMultiProcessing(
     mountpointChunks = mountpointSplitter(
         casterSettingsDict, processingSettings.maxReaders
     )
-    logging.debug(f"Mountpoint chunks: {mountpointChunks}")
+    logging.info(f"Mountpoint chunks: {[[x.sitename for x in liste] for liste in mountpointChunks]}")
     numberReaders = min(processingSettings.maxReaders, len(mountpointChunks))
     numberDecoders = math.ceil(numberReaders // processingSettings.readersPerDecoder)
 
@@ -838,7 +845,7 @@ if __name__ == "__main__":
     dbSettings = DbSettings()
     processingSettings = MultiprocessingSettings()
     # Set verbosity level
-    args.verbosity = 3
+    args.verbosity = 2
     # Set logging level based on verbosity
     logLevel = logging.ERROR
     if args.verbosity == 1:
