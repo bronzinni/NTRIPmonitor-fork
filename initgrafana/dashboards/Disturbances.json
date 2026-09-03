@@ -1025,6 +1025,10 @@
           "text": "L1C",
           "value": "L1C"
         },
+        "datasource": {
+          "type": "postgres",
+          "uid": "UYgXEmhnz"
+        },
         "definition": "SELECT DISTINCT sat_signal\nFROM beidou_observations where mountpoint = '$selected_mountpoint' AND $__timeFilter(obs_epoch) ORDER BY sat_signal",
         "hide": 2,
         "includeAll": false,
