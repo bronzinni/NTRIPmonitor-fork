@@ -61,121 +61,23 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.insert_observations_GPS(decodedObsFrame json)
+
+CREATE OR REPLACE FUNCTION public.insert_observations(decodedObsFrame json)
  RETURNS VOID
  LANGUAGE plpgsql
 AS $$
 BEGIN
-    INSERT INTO observations_GPS(rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
+    INSERT INTO observations(rtcm_id, obs_epoch, sat_sys, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
     SELECT (json_array_elements->>0)::bigint,
            (json_array_elements->>2)::timestamp with time zone,
-           (json_array_elements->>4)::char(3),
-           (json_array_elements->>5)::char(3), 
-           (json_array_elements->>6)::double precision,
+           (json_array_elements->>4)::char(1),
+           (json_array_elements->>5)::integer,
+           (json_array_elements->>6)::char(2),
            (json_array_elements->>7)::double precision,
            (json_array_elements->>8)::double precision,
            (json_array_elements->>9)::double precision,
-           (json_array_elements->>10)::integer
-    FROM json_array_elements(decodedObsFrame);
-END;
-$$;
-
-
-CREATE OR REPLACE FUNCTION public.insert_observations_GLO(decodedObsFrame json)
- RETURNS VOID
- LANGUAGE plpgsql
-AS $$
-BEGIN
-    INSERT INTO observations_GLO(rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
-    SELECT (json_array_elements->>0)::bigint,
-           (json_array_elements->>2)::timestamp with time zone,
-           (json_array_elements->>4)::char(3),
-           (json_array_elements->>5)::char(3), 
-           (json_array_elements->>6)::double precision,
-           (json_array_elements->>7)::double precision,
-           (json_array_elements->>8)::double precision,
-           (json_array_elements->>9)::double precision,
-           (json_array_elements->>10)::integer
-    FROM json_array_elements(decodedObsFrame);
-END;
-$$;
-
-
-CREATE OR REPLACE FUNCTION public.insert_observations_GAL(decodedObsFrame json)
- RETURNS VOID
- LANGUAGE plpgsql
-AS $$
-BEGIN
-    INSERT INTO observations_GAL(rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
-    SELECT (json_array_elements->>0)::bigint,
-           (json_array_elements->>2)::timestamp with time zone,
-           (json_array_elements->>4)::char(3),
-           (json_array_elements->>5)::char(3), 
-           (json_array_elements->>6)::double precision,
-           (json_array_elements->>7)::double precision,
-           (json_array_elements->>8)::double precision,
-           (json_array_elements->>9)::double precision,
-           (json_array_elements->>10)::integer
-    FROM json_array_elements(decodedObsFrame);
-END;
-$$;
-
-
-CREATE OR REPLACE FUNCTION public.insert_observations_BDS(decodedObsFrame json)
- RETURNS VOID
- LANGUAGE plpgsql
-AS $$
-BEGIN
-    INSERT INTO observations_BDS(rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
-    SELECT (json_array_elements->>0)::bigint,
-           (json_array_elements->>2)::timestamp with time zone,
-           (json_array_elements->>4)::char(3),
-           (json_array_elements->>5)::char(3), 
-           (json_array_elements->>6)::double precision,
-           (json_array_elements->>7)::double precision,
-           (json_array_elements->>8)::double precision,
-           (json_array_elements->>9)::double precision,
-           (json_array_elements->>10)::integer
-    FROM json_array_elements(decodedObsFrame);
-END;
-$$;
-
-
-CREATE OR REPLACE FUNCTION public.insert_observations_QZSS(decodedObsFrame json)
- RETURNS VOID
- LANGUAGE plpgsql
-AS $$
-BEGIN
-    INSERT INTO observations_QZSS(rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
-    SELECT (json_array_elements->>0)::bigint,
-           (json_array_elements->>2)::timestamp with time zone,
-           (json_array_elements->>4)::char(3),
-           (json_array_elements->>5)::char(3), 
-           (json_array_elements->>6)::double precision,
-           (json_array_elements->>7)::double precision,
-           (json_array_elements->>8)::double precision,
-           (json_array_elements->>9)::double precision,
-           (json_array_elements->>10)::integer
-    FROM json_array_elements(decodedObsFrame);
-END;
-$$;
-
-
-CREATE OR REPLACE FUNCTION public.insert_observations_SBAS(decodedObsFrame json)
- RETURNS VOID
- LANGUAGE plpgsql
-AS $$
-BEGIN
-    INSERT INTO observations_SBAS(rtcm_id, obs_epoch, sat_id, sat_signal, obs_code, obs_phase, obs_doppler, obs_snr, obs_lock_time_indicator)
-    SELECT (json_array_elements->>0)::bigint,
-           (json_array_elements->>2)::timestamp with time zone,
-           (json_array_elements->>4)::char(3),
-           (json_array_elements->>5)::char(3), 
-           (json_array_elements->>6)::double precision,
-           (json_array_elements->>7)::double precision,
-           (json_array_elements->>8)::double precision,
-           (json_array_elements->>9)::double precision,
-           (json_array_elements->>10)::integer
+           (json_array_elements->>10)::double precision,
+           (json_array_elements->>11)::integer
     FROM json_array_elements(decodedObsFrame);
 END;
 $$;

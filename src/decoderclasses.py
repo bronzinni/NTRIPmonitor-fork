@@ -232,7 +232,7 @@ class DecoderMSM(Decoder):
                 signalCount = len(satSignals)
                 availSatMask = str(self.data[0][9])
                 satId = [
-                    f"{constellation_id}{id + 1:02d}"
+                    id + 1
                     for id in range(64)
                     if availSatMask[id] == "1"
                 ]
@@ -272,6 +272,7 @@ class DecoderMSM(Decoder):
                                     self.mountPoint,
                                     obsEpochStr,
                                     self.messageType,
+                                    constellation_id,
                                     satId[satNo],
                                     satSignal,
                                     obsCode,
