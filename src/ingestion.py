@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""_summary_
+"""
 This script is responsible for ingesting Real-Time Kinematic (RTK) correction data
 in the RTCM format from an NTRIP caster and storing it in the UREGA database.
 
@@ -17,6 +14,7 @@ settings. The settings include the details for the NTRIP caster and the database
 """
 
 import asyncio
+
 import json
 import logging
 import signal
@@ -24,16 +22,16 @@ import os
 from argparse import ArgumentParser
 from configparser import ConfigParser
 import math
-from multiprocessing import Lock, Manager, Process, Pipe
+from multiprocessing import Lock, Manager, Pipe, Process
 from multiprocessing.connection import Connection
 
-from time import time, sleep
+from time import time
 from dotenv import load_dotenv
 
 from databasehandling import DatabaseHandler, DatabaseConnection, NtripObservationHandler, NtripLogHandler
-import asyncpg
+from settings import DbSettings, MultiprocessingSettings
 from ntripclient import NtripClients
-from settings import CasterSettings, DbSettings, MultiprocessingSettings, Mountpoint
+from ntripclasses import Caster, Mountpoint
 import decoderclasses
 from rtcm3 import Rtcm3
 
@@ -254,7 +252,7 @@ async def periodicFrameAppender(
 
 
 async def procRtcmStream(
-    casterSettings: CasterSettings,
+    casterSettings: Caster,
     dbSettings: DbSettings,
     mountPoint: Mountpoint,
     lock,
@@ -263,7 +261,7 @@ async def procRtcmStream(
     retry: int = 3,
 ) -> None:
     ntripclient = NtripClients()
-    ntripLogger = NtripLogHandler(dbSettings, mountPoint.sitename)
+    ntripLogger = NtripLogHandler(dbSettings, mountPoint.mountpoint)
     await ntripLogger.initializePool()
     ntripclient = await ntripLogger.requestStream(
         ntripclient, casterSettings, log_disconnect=False
@@ -273,7 +271,7 @@ async def procRtcmStream(
     logging.debug(mountPoint)
 
     asyncio.create_task(
-        periodicFrameAppender(encodedFrames, sharedEncoded, lock, mountPoint.sitename)
+        periodicFrameAppender(encodedFrames, sharedEncoded, lock, mountPoint.mountpoint)
     )
 
     try:
@@ -286,7 +284,7 @@ async def procRtcmStream(
                             "frame": rtcmFrame,
                             "time_received": timeStamp,
                             "msg_size": len(rtcmFrame),
-                            "mountpoint_id": mountPoint.mountpointId,
+                            "mountpoint_id": mountPoint.mountpoint_id,
                         }
                     )
             except (ConnectionError, IOError, IndexError):
@@ -302,9 +300,9 @@ async def procRtcmStream(
     # Fails on SSL connection and commented out:
     # await ntripclient.ntripWriter.wait_closed()
     while not ntripclient.ntripWriter.is_closing():
-        logging.info(f"Waiting for connection to close: {mountPoint.sitename}.")
+        logging.info(f"Waiting for connection to close: {mountPoint.mountpoint}.")
         await asyncio.sleep(0.5)
-    logging.info(f"{mountPoint.sitename}: Closed connection.")
+    logging.info(f"{mountPoint.mountpoint}: Closed connection.")
     return
 
 async def rtcmStreamTasks(
@@ -318,8 +316,8 @@ async def rtcmStreamTasks(
     tasks = {}
 
     for mountpoint in mountPointList:
-        casterSettings = casterSettingsDict[mountpoint.caster.name]
-        tasks[mountpoint.sitename] = asyncio.create_task(
+        casterSettings = casterSettingsDict[mountpoint.caster]
+        tasks[mountpoint.mountpoint] = asyncio.create_task(
             procRtcmStream(
                 casterSettings,
                 dbSettings,
@@ -327,7 +325,7 @@ async def rtcmStreamTasks(
                 lock,
                 sharedEncoded,
             ),
-            name=mountpoint.sitename,
+            name=mountpoint.mountpoint,
         )
 
     # Create the watchdog task
@@ -423,12 +421,24 @@ async def downloadSourceTable(
                         if sourceCols[0] == "STR" and sourceCols[1] in casterSettings.sitenames:
                             mountpoint = casterSettings.mountpoints[casterSettings.sitenames.index(sourceCols[1])]
 
-                            mountpoint.city = sourceCols[2]
-                            mountpoint.countrycode = sourceCols[8]
+                            mountpoint.identifier = sourceCols[2]
+                            mountpoint.format = sourceCols[3]
+                            mountpoint.format_details = sourceCols[4]
+                            mountpoint.carrier = int(sourceCols[5])
+                            mountpoint.nav_system = sourceCols[6]
+                            mountpoint.network = sourceCols[7]
+                            mountpoint.country = sourceCols[8]
                             mountpoint.latitude = float(sourceCols[9])
                             mountpoint.longitude = float(sourceCols[10])
-                            mountpoint.receiver = sourceCols[13]
-                            mountpoint.rtcm_version = sourceCols[3]
+                            mountpoint.nmea = int(sourceCols[11])
+                            mountpoint.solution = int(sourceCols[12])
+                            mountpoint.generator = sourceCols[13]
+                            mountpoint.compr_encryp = sourceCols[14]
+                            mountpoint.authentication = sourceCols[15]  
+                            mountpoint.fee = sourceCols[16]
+                            mountpoint.bitrate = int(sourceCols[17])
+                            mountpoint.misc = sourceCols[18]
+
                 except Exception as exc:
                     logging.error(f"Failed to read source table information {exc}. Continuing without details.")
 
@@ -436,31 +446,23 @@ async def downloadSourceTable(
                     # prepare list of dictionaries for database insertion of mountpoints
                     json_table = []
                     for mountpoint in casterSettings.mountpoints:
-                        mountpoint.caster = casterSettings
-                        json_table.append(
-                            {
-                                'sitename': mountpoint.sitename,
-                                'city': mountpoint.city,
-                                'countrycode': mountpoint.countrycode,
-                                'latitude': mountpoint.latitude,
-                                'longitude': mountpoint.longitude,
-                                'receiver': mountpoint.receiver,
-                                'rtcm_version': mountpoint.rtcm_version,
+                        mountpoint.caster_id = casterSettings.casterId
+                        mountpoint.caster = casterSettings.name
 
-                                'caster_id': mountpoint.caster.casterId
-                            }
+                        json_table.append(
+                            mountpoint.as_dict()
                         )
                         
                     mountpointJson = json.dumps(json_table)
-                    mountpointIds = await connection.fetchval(
+                    mountpoint_ids = await connection.fetchval(
                         f"SELECT insert_mountpoints($1::json)",
                         mountpointJson,
                     )
 
-                    for mountpointId, mountpoint in zip(mountpointIds, casterSettings.mountpoints):
-                        mountpoint.mountpointId = mountpointId
+                    for mountpoint_id, mountpoint in zip(mountpoint_ids, casterSettings.mountpoints):
+                        mountpoint.mountpoint_id = mountpoint_id
                     logging.debug(
-                        f"Inserted {len(casterSettings.mountpoints)} mountpoints metadata into the database with ids {mountpointIds}."
+                        f"Inserted {len(casterSettings.mountpoints)} mountpoints metadata into the database with ids {mountpoint_ids}."
                     )
                 except Exception as exc:
                     logging.error(f"Failed to write mountpoints {casterSettings.mountpoints} to database: {exc}.")
@@ -475,7 +477,7 @@ def loadCasterSettings():
     # Iterate through environment variables to find caster settings
     for key, value in os.environ.items():
         if key.endswith("_CASTER_ID") and value != "Empty":
-            casterInstance = CasterSettings()
+            casterInstance = Caster()
             prefix = key.split("_")[0]  # Extract prefix (e.g., "1" from "1_CASTER_ID")
             caster_id = value  # The actual CASTER_ID value
 
@@ -490,13 +492,13 @@ def loadCasterSettings():
             casterInstance.casterUrl = os.getenv(caster_url_key, "")
             casterInstance.user = os.getenv(caster_user_key, "")
             casterInstance.password = os.getenv(caster_password_key, "")
-            casterInstance.mountpoints = [Mountpoint(sitename) for sitename in list(
+            casterInstance.mountpoints = [Mountpoint(mountpoint) for mountpoint in list(
                 map(str.strip, os.getenv(caster_mountpoint_key, "").split(","))
             )]
 
             if casterInstance.mountpoints == [""]:
                 casterInstance.mountpoints = []
-            # Create a CasterSettings object and add it to the dictionary
+            # add it to the dictionary
             casterSettingsDict[caster_id] = casterInstance
     return casterSettingsDict
 
@@ -511,6 +513,21 @@ def loadDbSettings():
 
     return dbSettings
 
+def loadMultiProcessingSettings():
+    processingSettings = MultiprocessingSettings()
+    processingSettings.multiprocessingActive = (
+        os.getenv("MULTIPROCESSING_ACTIVE") == "True"
+    )
+    processingSettings.maxReaders = int(os.getenv("MAX_READERS"))
+    processingSettings.readersPerDecoder = int(os.getenv("READERS_PER_DECODER"))
+    processingSettings.clearCheck = float(
+        os.getenv("CLEAR_CHECK")
+    )  # Currently un-used. Will be used for clearing shared list.
+    processingSettings.appendCheck = float(
+        os.getenv("APPEND_CHECK")
+    )  # Currently un-used. Will be used for appending shared list.
+
+    return processingSettings
 
 def initializationLogger(
     casterSettingsDict,
@@ -616,7 +633,7 @@ class readerProcess(parallelProcess):
         lock: Lock,
     ):
         super().__init__()
-        self.caster = casterSettingsDict
+        self.casters = casterSettingsDict
         self.database = dbSettings
         self.mountpoints = mountpointChunk
         self.shared = sharedEncoded
@@ -625,12 +642,12 @@ class readerProcess(parallelProcess):
     def run(self):
         asyncio.run(
             rtcmStreamTasks(
-                self.caster, self.database, self.mountpoints, self.shared, self.lock, self.pipe_read
+                self.casters, self.database, self.mountpoints, self.shared, self.lock, self.pipe_read
             )
         )
 
     def __repr__(self):
-        return f"Reader ({self.process.name}, pid {self.process.pid}) with shared memory {hex(id(self.shared))} of mountpoints {[x.sitename for x in self.mountpoints]}"
+        return f"Reader ({self.process.name}, pid {self.process.pid}) with shared memory {hex(id(self.shared))} of mountpoints {[x.mountpoint for x in self.mountpoints]}"
 
 
 class decoderProcess(parallelProcess):
@@ -675,7 +692,7 @@ def RunMultiProcessing(
     mountpointChunks = mountpointSplitter(
         casterSettingsDict, processingSettings.maxReaders
     )
-    logging.info(f"Mountpoint chunks: {[[x.sitename for x in liste] for liste in mountpointChunks]}")
+    logging.info(f"Mountpoint chunks: {[[x.mountpoint for x in liste] for liste in mountpointChunks]}")
     numberReaders = min(processingSettings.maxReaders, len(mountpointChunks))
     numberDecoders = math.ceil(numberReaders // processingSettings.readersPerDecoder)
 
@@ -757,7 +774,7 @@ def main(
     The main function that sets up signal handlers and starts the RTCM stream tasks.
 
     Parameters contain information in the form of dataclasses instances created from the .env configuration:
-    casterSettingsDict (CasterSettingsDict): A dictionary of CasterSettings instances containing the caster settings.
+    casterSettingsDict (CasterSettingsDict): A dictionary of Caster instances containing the caster settings.
     dbSettings (DbSettings): An instance of DbSettings containing the database connection details.
     processingSettings (MultiprocessingSettings): An instance of MultiprocessingSettings containing settings.
     """
@@ -801,13 +818,6 @@ def main(
 
 # This code is only executed if the script is run directly
 if __name__ == "__main__":
-    # Declare global variables
-    global casterSettings
-    global dbSettings
-    global processingSettings
-    global tasks
-    tasks = {}
-
     # Set up argument parser
     parser = ArgumentParser()
     # Add command line arguments
@@ -841,11 +851,8 @@ if __name__ == "__main__":
     # Initialize config parser
     config = ConfigParser()
 
-    # Initialize caster and database settings
-    dbSettings = DbSettings()
-    processingSettings = MultiprocessingSettings()
     # Set verbosity level
-    args.verbosity = 2
+    args.verbosity = 3
     # Set logging level based on verbosity
     logLevel = logging.ERROR
     if args.verbosity == 1:
@@ -867,27 +874,16 @@ if __name__ == "__main__":
         )
 
     load_dotenv()
-    # casterSettingsDict contains the CasterSettings instances (dataclass) for all casters
-    # CBH: instead of functions, consider classmethods
+    # casterSettingsDict contains the Caster instances (dataclass) for all casters
     casterSettingsDict = loadCasterSettings()
 
     # dataclass for database settings
     dbSettings = loadDbSettings()
 
-    processingSettings.multiprocessingActive = (
-        os.getenv("MULTIPROCESSING_ACTIVE") == "True"
-    )
-    processingSettings.maxReaders = int(os.getenv("MAX_READERS"))
-    processingSettings.readersPerDecoder = int(os.getenv("READERS_PER_DECODER"))
-    processingSettings.clearCheck = float(
-        os.getenv("CLEAR_CHECK")
-    )  # Currently un-used. Will be used for clearing shared list.
-    processingSettings.appendCheck = float(
-        os.getenv("APPEND_CHECK")
-    )  # Currently un-used. Will be used for appending shared list.
+    multiProcessingSettings = loadMultiProcessingSettings()
 
     # If test mode is enabled, don't use database settings
     if args.test:
         dbSettings = None
     # Run the main function with the specified settings
-    main(casterSettingsDict, dbSettings, processingSettings)
+    main(casterSettingsDict, dbSettings, multiProcessingSettings)

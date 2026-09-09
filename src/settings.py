@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-
-# This module is misnamed.
-# The actual settings are not dealt with here.
-# This module will be renamed later - dataclasses.py would not be silly
 
 @dataclass
 class DbSettings:
@@ -17,39 +13,6 @@ class DbSettings:
     password: str = None
     storeObservations: bool = None
 
-# pre-declare CasterSettings for use in Mountpoint
-class CasterSettings:
-    pass
-
-@dataclass
-class Mountpoint:
-    sitename: str
-    city: str = None
-    countrycode: str = None
-    latitude: float = None
-    longitude: float = None
-    receiver: str = None
-    rtcm_version: str = None
-
-    mountpointId: int = None
-    caster: CasterSettings = None
-
-@dataclass
-class CasterSettings:
-    name: str = None
-    casterId: int = None
-    casterUrl: str = None
-    user: str = None
-    password: str = field(default=None, repr = False)
-    active: bool = False
-    mountpoints: list[Mountpoint] = field(default_factory=list)
-
-
-    @property
-    def sitenames(self) -> list:
-        return [site.sitename for site in self.mountpoints]
-
-
 @dataclass
 class MultiprocessingSettings:
     multiprocessingActive: bool = True
@@ -57,3 +20,4 @@ class MultiprocessingSettings:
     readersPerDecoder: int = None
     clearCheck: float = None
     appendCheck: float = None
+

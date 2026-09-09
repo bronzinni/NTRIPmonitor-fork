@@ -23,17 +23,28 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
     WITH insertion AS (
-        INSERT INTO mountpoints (caster_id, sitename, city, countrycode, latitude, longitude, receiver, rtcm_version)
+        INSERT INTO mountpoints (caster_id, mountpoint, identifier, format, format_details, carrier, nav_system, network, country, latitude, longitude, nmea, solution, generator, compr_encryp, authentication, fee, bitrate, misc)
         SELECT (json_array_elements->>'caster_id')::INT,
-            (json_array_elements->>'sitename')::TEXT,
-            (json_array_elements->>'city')::TEXT,
-            (json_array_elements->>'countrycode')::TEXT,
-            (json_array_elements->>'latitude')::DECIMAL(7,4),
-            (json_array_elements->>'longitude')::DECIMAL(7,4),
-            (json_array_elements->>'receiver')::TEXT,
-            (json_array_elements->>'rtcm_version')::TEXT
+            (json_array_elements->>'mountpoint')::VARCHAR(100),
+            (json_array_elements->>'identifier')::VARCHAR(100),
+            (json_array_elements->>'format')::TEXT,
+            (json_array_elements->>'format_details')::TEXT,
+            (json_array_elements->>'carrier')::INT,
+            (json_array_elements->>'nav_system')::TEXT,
+            (json_array_elements->>'network')::TEXT,
+            (json_array_elements->>'country')::VARCHAR(3),
+            (json_array_elements->>'latitude')::NUMERIC(5,2),
+            (json_array_elements->>'longitude')::NUMERIC(5,2),
+            (json_array_elements->>'nmea')::INT,
+            (json_array_elements->>'solution')::INT,
+            (json_array_elements->>'generator')::TEXT,
+            (json_array_elements->>'compr_encryp')::TEXT,
+            (json_array_elements->>'authentification')::VARCHAR(1),
+            (json_array_elements->>'fee')::VARCHAR(1),
+            (json_array_elements->>'bitrate')::INT,
+            (json_array_elements->>'misc')::TEXT
         FROM json_array_elements(mountpointTable)
-        ON CONFLICT (caster_id, sitename) DO UPDATE
+        ON CONFLICT (caster_id, mountpoint) DO UPDATE
         SET caster_id = EXCLUDED.caster_id -- Necessary for procedure to return existing mountpoint_id
         RETURNING mountpoint_id
     )

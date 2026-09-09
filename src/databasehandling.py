@@ -4,7 +4,8 @@ import json
 import logging
 from time import sleep, gmtime, strftime, time
 
-from settings import CasterSettings, DbSettings, MultiprocessingSettings
+from settings import DbSettings, MultiprocessingSettings
+from ntripclasses import Caster
 from ntripclient import NtripClients
 
 
@@ -315,7 +316,7 @@ class NtripLogHandler(DatabaseHandler):
     async def requestStream(
         self,
         ntripclient: NtripClients,
-        casterSettings: CasterSettings,
+        casterSettings: Caster,
         log_disconnect: bool = True,
     ):
         """
@@ -325,7 +326,7 @@ class NtripLogHandler(DatabaseHandler):
 
         Args:
         ntripclient (NtripClients): An instance of NtripClients to request the NTRIP stream.
-        casterSettings (CasterSettings): An instance of CasterSettings containing the caster connection details.
+        casterSettings (Caster): An instance of Caster containing the caster connection details.
         log_disconnect (bool): Whether to log disconnects and reconnects. Default is True.
         log_disconnect is set to false during the initialization as to not log disconnects.
         """

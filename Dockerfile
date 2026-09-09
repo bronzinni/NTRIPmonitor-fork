@@ -11,7 +11,5 @@ RUN apk update \
     && mkdir ./config
 
 COPY ./src/ ./
-COPY ./src/settings.py ./settings.py
-COPY ./src/ingestion.py ./ingestion.py
 
 ENTRYPOINT ["python3", "ingestion.py"]
