@@ -328,9 +328,9 @@ class Rtcm3:
     __msg1003Head = "uint:12, " + __msg1001_4Head
     __msg1004Head = "uint:12, " + __msg1001_4Head
     __msg1001Obs = "uint:6, bool, uint:24, " "int:20, uint:7"
-    __msg1002Obs = __msg1001Obs + "uint:8, uint:8"
-    __msg1003Obs = __msg1001Obs + "bool, uint:24, " "int:20, uint:7"
-    __msg1004Obs = __msg1002Obs + "bool, uint:24, " "int:20, uint:7, " "uint:8"
+    __msg1002Obs = __msg1001Obs + ", uint:8, uint:8"
+    __msg1003Obs = __msg1001Obs + ", bool, uint:24, " "int:20, uint:7"
+    __msg1004Obs = __msg1002Obs + ", bin:2, int:14, int:20, uint:7, uint:8"
 
     # GLONASS messages
     __msg1009_12Head = "uint:12, uint:27, bool, " "uint:5, bool, bin:3"
@@ -339,9 +339,9 @@ class Rtcm3:
     __msg1011Head = "uint:12, " + __msg1009_12Head
     __msg1012Head = "uint:12, " + __msg1009_12Head
     __msg1009Obs = "uint:6, bool, uint:5,  uint:24, " "int:20, uint:7"
-    __msg1010Obs = __msg1009Obs + "uint:8, uint:8"
-    __msg1011Obs = __msg1009Obs + "bool, uint:24, " "int:20, uint:7"
-    __msg1012Obs = __msg1010Obs + "bool, uint:24, " "int:20, uint:7, " "uint:8"
+    __msg1010Obs = __msg1009Obs + ", uint:8, uint:8"
+    __msg1011Obs = __msg1009Obs + ", bool, uint:24, " "int:20, uint:7"
+    __msg1012Obs = __msg1010Obs + ", bool, uint:24, " "int:20, uint:7, " "uint:8"
 
     # Other messages
     __msg1029 = "uint:12, uint:12, uint:16, " "uint:17, uint:7, uint:8, " "bytes"
