@@ -470,37 +470,60 @@ async def downloadSourceTable(
     return
 
 
-def loadCasterSettings():
-    load_dotenv()  # Load environment variables from .env file
+# def old_loadCasterSettings():
+#     load_dotenv()  # Load environment variables from .env file
+#     casterSettingsDict = {}
+
+#     # Iterate through environment variables to find caster settings
+#     for key, value in os.environ.items():
+#         if key.endswith("_CASTER_ID") and value != "Empty":
+#             casterInstance = Caster()
+#             prefix = key.split("_")[0]  # Extract prefix (e.g., "1" from "1_CASTER_ID")
+#             caster_id = value  # The actual CASTER_ID value
+
+#             # Construct the keys for other settings based on the prefix
+#             caster_url_key = f"{prefix}_CASTER_URL"
+#             caster_user_key = f"{prefix}_CASTER_USER"
+#             caster_password_key = f"{prefix}_CASTER_PASSWORD"
+#             caster_mountpoint_key = f"{prefix}_CASTER_MOUNTPOINT"
+
+#             # Extract other settings using the constructed keys
+#             casterInstance.name = caster_id
+#             casterInstance.casterUrl = os.getenv(caster_url_key, "")
+#             casterInstance.user = os.getenv(caster_user_key, "")
+#             casterInstance.password = os.getenv(caster_password_key, "")
+#             casterInstance.mountpoints = [Mountpoint(mountpoint) for mountpoint in list(
+#                 map(str.strip, os.getenv(caster_mountpoint_key, "").split(","))
+#             )]
+
+#             if casterInstance.mountpoints == [""]:
+#                 casterInstance.mountpoints = []
+#             # add it to the dictionary
+#             casterSettingsDict[caster_id] = casterInstance
+#     return casterSettingsDict
+
+def load_connections():
+    with open('./conf/connections.json', 'r') as f:
+        connections = json.load(f)
+    
     casterSettingsDict = {}
 
-    # Iterate through environment variables to find caster settings
-    for key, value in os.environ.items():
-        if key.endswith("_CASTER_ID") and value != "Empty":
-            casterInstance = Caster()
-            prefix = key.split("_")[0]  # Extract prefix (e.g., "1" from "1_CASTER_ID")
-            caster_id = value  # The actual CASTER_ID value
+    for connection in connections:
+        if connection["type"] == "caster":
+            caster = Caster()
+            caster.name = connection["id"]
+            caster.casterUrl = connection["host"] + ":" + str(connection["port"])
+            caster.user = connection["auth"]["username"]
+            caster.password = connection["auth"]["password"]
 
-            # Construct the keys for other settings based on the prefix
-            caster_url_key = f"{prefix}_CASTER_URL"
-            caster_user_key = f"{prefix}_CASTER_USER"
-            caster_password_key = f"{prefix}_CASTER_PASSWORD"
-            caster_mountpoint_key = f"{prefix}_CASTER_MOUNTPOINT"
+            caster.mountpoints = [Mountpoint(mountpoint["name"]) for mountpoint in connection["mountpoints"] if mountpoint["enabled"] == True]
 
-            # Extract other settings using the constructed keys
-            casterInstance.name = caster_id
-            casterInstance.casterUrl = os.getenv(caster_url_key, "")
-            casterInstance.user = os.getenv(caster_user_key, "")
-            casterInstance.password = os.getenv(caster_password_key, "")
-            casterInstance.mountpoints = [Mountpoint(mountpoint) for mountpoint in list(
-                map(str.strip, os.getenv(caster_mountpoint_key, "").split(","))
-            )]
+            casterSettingsDict[caster.name] = caster
 
-            if casterInstance.mountpoints == [""]:
-                casterInstance.mountpoints = []
-            # add it to the dictionary
-            casterSettingsDict[caster_id] = casterInstance
     return casterSettingsDict
+
+
+
 
 def loadDbSettings():
     dbSettings = DbSettings()
@@ -852,7 +875,7 @@ if __name__ == "__main__":
     config = ConfigParser()
 
     # Set verbosity level
-    args.verbosity = 3
+    args.verbosity = 2
     # Set logging level based on verbosity
     logLevel = logging.ERROR
     if args.verbosity == 1:
@@ -875,7 +898,7 @@ if __name__ == "__main__":
 
     load_dotenv()
     # casterSettingsDict contains the Caster instances (dataclass) for all casters
-    casterSettingsDict = loadCasterSettings()
+    casterSettingsDict = load_connections()
 
     # dataclass for database settings
     dbSettings = loadDbSettings()

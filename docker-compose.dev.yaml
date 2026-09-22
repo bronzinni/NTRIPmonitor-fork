@@ -67,6 +67,8 @@ services:
             - .env
         depends_on:
             - timescaledb
+        volumes:
+            - ./conf/connections.json:/conf/connections.json:ro
         logging:
             driver: "local"
             options:

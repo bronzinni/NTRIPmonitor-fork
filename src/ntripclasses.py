@@ -3,10 +3,6 @@
 
 from dataclasses import dataclass, field, asdict
 
-# pre-declare Caster for use in Mountpoint
-class Caster:
-    pass
-
 @dataclass
 class Mountpoint:
     mountpoint: str
