@@ -160,6 +160,21 @@ class DecoderKepler(Decoder):
 
         return {"decodedObs": self.decodedObs}
 
+class DecoderNAV(Decoder):
+    def __init__(self, params):
+        super().__init__(params)
+        self.mountPoint = params['mountPoint']
+        self.messageType = params['messageType']
+        self.decodedObs = []
+
+    def decode(self):
+        try:
+            self.decodedObs.append([self.messageType,
+                               self.mountPoint] + self.data[1])
+        except Exception as error:
+            logging.error(f"Failed to decode NAV message {self.messageType} with error: {error}. Setting observation to None")
+            self.decodedObs = None
+
 class DecoderMSM(Decoder):
     def __init__(self, params):
         super().__init__(params)
