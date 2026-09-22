@@ -1,0 +1,17 @@
+[
+    {
+      "id": "KDS",
+      "enabled": true,
+      "type": "caster",
+      "host": "https://ntrip.dataforsyningen.dk",
+      "port": 443,
+      "tls": true,
+      "auth": { "type": "basic", "username": "username", "password": "password" },
+      "mountpoints": [
+        { "name": "TA0100DNK", "enabled": false },
+        { "name": "TA0400DNK", "enabled": false },
+        { "name": "TEJH00DNK", "enabled": false },
+        { "name": "SKG100DNK", "enabled": true }
+      ]
+    }
+]
