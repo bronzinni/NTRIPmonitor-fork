@@ -1,13 +1,12 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-from abc import ABC, abstractmethod
 import logging
+from abc import ABC, abstractmethod
 from datetime import datetime
 from math import pow
 from time import gmtime, strftime, time
 
 from rtcm3 import Rtcm3
+
+logger = logging.getLogger(__name__)
 
 class Decoder(ABC):
     def __init__(self,params):
@@ -27,7 +26,7 @@ class Decoder(ABC):
                 else:
                     decodedObs.append(None)
             except Exception as error:
-                logging.error(f"Errors in grabbing decoder class : {error}")
+                logger.error(f"Errors in grabbing decoder class : {error}")
                 continue
         return decodedFrames, decodedObs
 
@@ -36,26 +35,26 @@ class Decoder(ABC):
         try: 
             params['msg_type'], params['data'] = rtcmMessage.decodeRtcmFrame(params['frame'])
         except Exception as error:
-            logging.error(f"Failed to decode RTCM frame with error: {error}")
+            logger.error(f"Failed to decode RTCM frame with error: {error}")
             return None, None
         decodedFrame = Decoder.rtcmSimpleMetadata(params)
         # decoderClass = None
         decodedObs = None
-        # logging.info(params['msg_type'])
+        # logger.info(params['msg_type'])
         if storeObsCheck:
             decoderClass = DECODER_MAP.get(params['msg_type'])
             if decoderClass is None:
-                logging.debug(f"Message type {params['msg_type']} not supported")
+                logger.debug(f"Message type {params['msg_type']} not supported")
                 return decodedFrame, None
             else:
-                logging.debug(f"Message type {params['msg_type']} supported")
+                logger.debug(f"Message type {params['msg_type']} supported")
                 decoderInstance = decoderClass(params)
                 try:
                     decodedObs = decoderInstance.decode()
                     if decodedObs is None or not decodedObs:
                         return decodedFrame, None
                 except Exception as error:
-                    logging.error(f"Failed to decode RTCM observation frame with error: {error}")
+                    logger.error(f"Failed to decode RTCM observation frame with error: {error}")
                     return decodedFrame, None
         return decodedFrame, decodedObs
 
@@ -78,7 +77,7 @@ class Decoder(ABC):
                 "msg_size": params['msg_size']
             }
         except Exception as error:
-            logging.info(f"Failed to decode simple metadata {params['msg_type']}: {error}")
+            logger.info(f"Failed to decode simple metadata {params['msg_type']}: {error}")
         return decodedFrame
 
 
@@ -113,7 +112,7 @@ class DecoderPOS(Decoder):
                                z,
                                antHgt])
         except Exception as error:
-            logging.error(f"Failed to decode ARP message {self.messageType} with error: {error}. Setting observation to None.")
+            logger.error(f"Failed to decode ARP message {self.messageType} with error: {error}. Setting observation to None.")
             self.decodedObs = None
         
         return {"decodedObs": self.decodedObs}
@@ -156,7 +155,7 @@ class DecoderMSM(Decoder):
         ):
             obsTime = obsTime - 3 * 3600
         # Log the message type, current time, observation time, and time difference
-        logging.debug(
+        logger.debug(
             f"Msg:{messageType} CPU:{strftime(f'%Y-%m-%d %H:%M:%S.{microseconds} z', gmtime(now))} "
             f"obsTime:{strftime(f'%Y-%m-%d %H:%M:%S.{microseconds} z', gmtime(obsTime))} "
             f"timeDiff:{obsSecOfDay - nowSecOfDay}"
@@ -242,7 +241,7 @@ class DecoderMSM(Decoder):
                             ))
                             availObsNo += 1
         except Exception as error:
-            logging.error(f"Failed to decode MSM frame with error: {error}. Setting observation to None")
+            logger.error(f"Failed to decode MSM message {self.messageType} with error: {error}. Setting observation to None.")
             self.decodedObs = None
         return {"decodedObs": self.decodedObs}
 

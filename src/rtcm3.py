@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-import logging
 from time import time
 
 from bitstring import Bits, pack
@@ -123,7 +119,6 @@ class Rtcm3:
         satData = []
         signalData = []
         messageType = message.peek("uint:12")
-        logging.debug(f"Decoding message type {messageType}")
 
         if messageType in self.msg_type_to_header_obs:
             head, obs_list = self.msg_type_to_header_obs[messageType]

@@ -1,13 +1,15 @@
 import asyncio
-import asyncpg
 import json
 import logging
-from time import sleep, gmtime, strftime, time
+from time import gmtime, sleep, strftime, time
 
-from settings import DbSettings, MultiprocessingSettings
+import asyncpg
+
 from ntripclasses import Caster
 from ntripclient import NtripClients
+from settings import DbSettings
 
+logger = logging.getLogger(__name__)
 
 class DatabaseHandler:
     def __init__(self, dbSettings = DbSettings):
@@ -28,7 +30,7 @@ class DatabaseHandler:
                 )
                 break
             except Exception as error:
-                logging.error(f"Failed to create connection pool with: {error}.")
+                logger.error(f"Failed to create connection pool with: {error}.")
                 await asyncio.sleep(5)
 
     async def closePool(self):
@@ -72,11 +74,11 @@ class DatabaseHandler:
                 await dbConnection.close()
                 break
             except Exception as error:
-                logging.info(f"Database connection is not yet open. Returns: {error}. Trying in {sleepTime} seconds...")
+                logger.info(f"Database connection is not yet open. Returns: {error}. Trying in {sleepTime} seconds...")
                 sleep(sleepTime)
-        logging.info("Database initialized.  the monitor system.")
+        logger.info("Database initialized.  the monitor system.")
 
-class DatabaseConnection():
+class DatabaseConnection:
     def __init__(self, dbSettings: DbSettings, sleepTime: int = 5, tries: int = 10):
          self.dbSettings = dbSettings
          self.sleepTime = sleepTime
@@ -92,7 +94,7 @@ class DatabaseConnection():
                 break  # If the operation is successful break the loop
             except Exception as error:
                 fails += 1
-                logging.error(
+                logger.error(
                     f"""Failed ({fails}) to connect to database server:
                     {self.dbSettings.database}@{self.dbSettings.host}
                     with error: {error}. Trying in {self.sleepTime} seconds."""
@@ -100,7 +102,7 @@ class DatabaseConnection():
                 if fails >= self.tries:
                     raise ConnectionError
                 await asyncio.sleep(self.sleepTime)
-        logging.info(f"Connected to database: {self.dbSettings.database}@{self.dbSettings.host}.")
+        logger.info(f"Connected to database: {self.dbSettings.database}@{self.dbSettings.host}.")
 
         return self
     
@@ -195,7 +197,7 @@ class NtripObservationHandler(DatabaseHandler):
             try:
                 decodedObsFrame = [(rtcmId, *obsFrame) for obsFrame in decodedObsFrame]
             except Exception as error:
-                logging.error(
+                logger.error(
                     f"Error frame in iterable: {error} with frame {decodedObsFrame}"
                 )
             try:
@@ -206,20 +208,20 @@ class NtripObservationHandler(DatabaseHandler):
                         decodedFrames[index]['msg_type']
                     )
                     if stored_procedure is None:
-                        logging.error(
+                        logger.error(
                             f"No stored procedure found for RTCM message identifier: {decodedFrames[index]['msg_type']}."
                         )
                         continue
 
                     query = f"SELECT {stored_procedure}($1::json)"
-                    logging.debug(f"Executing query: {query}")
+                    logger.debug(f"Executing query: {query}")
                     await connection.execute(query, decodedObsFrameJson)
                 finally:
                     await self.releaseConnection(connection)
             except Exception as error:
-                logging.error(f"Database handling of frame: {decodedObsFrame}")
-                logging.error(f"rtcmId: {rtcmId}")
-                logging.error(
+                logger.error(f"Database handling of frame: {decodedObsFrame}")
+                logger.error(f"rtcmId: {rtcmId}")
+                logger.error(
                     f"Failed to insert and commit observational data to database with: {error}"
                 )
         return None
@@ -235,7 +237,7 @@ class NtripObservationHandler(DatabaseHandler):
             finally:
                 await self.releaseConnection(connection)
         except Exception as error:
-            logging.error(
+            logger.error(
                 f"Failed to insert and commit RTCM data to database with: {error}."
             )
             rtcmPackageIds = None
@@ -254,14 +256,13 @@ class NtripObservationHandler(DatabaseHandler):
                     decodedFrames, decodedObs, rtcmPackageIds
                 )
             elif rtcmPackageIds is None:
-                logging.debug(
+                logger.debug(
                     "RTCM package IDs returned None. Not storing observations."
                 )
         except Exception as error:
-            logging.error(
+            logger.error(
                 f"Failed to insert and commit data to database with: {error}."
             )
-        return None
 
 
 class NtripLogHandler(DatabaseHandler):
@@ -288,7 +289,7 @@ class NtripLogHandler(DatabaseHandler):
             self.disconnect_id = result
             await self.releaseConnection(connection)
         except asyncpg.exceptions.UndefinedFunctionError as e:
-            logging.error(
+            logger.error(
                 f"Could not update disconnect log. Stored procedure not found: {e}."
             )
 
@@ -309,7 +310,7 @@ class NtripLogHandler(DatabaseHandler):
             self.disconnect_id = None
             await self.releaseConnection(connection)
         except asyncpg.exceptions.UndefinedFunctionError as e:
-            logging.error(
+            logger.error(
                 f"Could not update reconnect log. Stored procedure not found: {e}"
             )
 
@@ -335,7 +336,7 @@ class NtripLogHandler(DatabaseHandler):
             # If not initialization and mountpoint not already disconnected
             # Insert database entry with disconnect timestamp.
             await self.insert_disconnect_log()
-            logging.info(f"{self.mountpoint}: Connection lost.")
+            logger.info(f"{self.mountpoint}: Connection lost.")
 
         while True:
             try:
@@ -349,11 +350,11 @@ class NtripLogHandler(DatabaseHandler):
                     # If not initialization and mountpoint already disconnected
                     # update database entry with reconnect timestamp.
                     await self.update_reconnect_log()
-                    logging.info(f"{self.mountpoint}: Connection reestablished.")
+                    logger.info(f"{self.mountpoint}: Connection reestablished.")
                 break
-            except Exception as error:
+            except Exception:
                 sleepTime = 5
-                logging.error(
+                logger.error(
                     f"{self.mountpoint}: Will retry NTRIP connection in {sleepTime} seconds!"
                 )
 

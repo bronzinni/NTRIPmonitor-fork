@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 
 http://ross.net/crc/download/crc_v3.txt
@@ -330,6 +328,6 @@ if __name__ == "__main__":
     print("[", end="")
     for i in range(255):
         if i > 0 and i % numInLine == 0:
-            print("")
+            print()
         print(f"0x{remTab[i]:06X}, ", end="")
     print(f"0x{remTab[255]:06X}]")
