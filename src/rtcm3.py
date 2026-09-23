@@ -145,39 +145,6 @@ class Rtcm3:
             antHgt = obs[11]
 
             satData = [ecefX, ecefY, ecefZ, antHgt]
-        elif messageType == 1019:
-            obs = message.readlist(self.__msg1019)
-            head = obs[0:5]
-            satData = obs[5:27]
-
-            satellite = 'G' + str(head[1])
-            # self.bias = mesg["bias"]
-            # self.drift = mesg["drift"]
-
-            sqrtA = head[18] * 2e-19 # Square root of semi-major axis
-
-            toe = head[19] * 2e4 # Ephemerides reference epoch in seconds within the week
-
-            delta_n = head[13] * 2e-43  # Mean motion difference
-            M0 = head[14] * 2e-31  # Mean anomaly at reference epoch
-            ecc = head[16] * 2e-33 # Eccentricity
-
-            omega = head[25] * 2e-31 # Argument of perigee
-
-            cuc = head[15] * 2e-29 # Latitude argument correction
-            cus = head[17] * 2e-29  # Latitude argument correction
-            crs = head[12] * 2e-5  # Orbital radius correction
-            crc = head[24] * 2e-5  # Orbital radius correction
-            cic = head[20] * 2e-29  # Inclination correction
-            cis = head[22] * 2e-29  # Inclination correction
-
-            i0 = head[23] * 2e-31  # Inclination angle at reference epoch
-            idot = head[5] * 2e-43  # Rate of inclination angle
-
-            OMEGA0 = head[21] * 2e-31  # Longitude of ascending node at the beginning of the week
-            OMEGAdot = head[26] * 2e-43  # Rate of node’s right ascension
-
-            satData = [satellite, sqrtA, toe, delta_n, M0, ecc, omega, cuc, cus, crs, crc, cic, cis, i0, idot, OMEGA0, OMEGAdot]
         elif (
             (1071 <= messageType <= 1077)
             or (1081 <= messageType <= 1087)

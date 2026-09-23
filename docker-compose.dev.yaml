@@ -21,7 +21,6 @@ services:
             - ./initdb/03-rtcm_messages.sql:/docker-entrypoint-initdb.d/03-rtcm_messages.sql
             - ./initdb/04-coordinates.sql:/docker-entrypoint-initdb.d/04-coordinates.sql
             - ./initdb/10-observations.sql:/docker-entrypoint-initdb.d/10-observations.sql
-            - ./initdb/21-ephemerides_GPS.sql:/docker-entrypoint-initdb.d/21-ephemerides_GPS.sql
             - ./initdb/30-connection_logger.sql:/docker-entrypoint-initdb.d/30-connection_logger.sql
             - ./initdb/99-stored_procedures.sql:/docker-entrypoint-initdb.d/99-stored_procedures.sql
         logging:
