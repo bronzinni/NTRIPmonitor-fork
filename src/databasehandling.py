@@ -343,7 +343,7 @@ class NtripLogHandler(DatabaseHandler):
                     await self.update_reconnect_log()
                     logger.info(f"{self.mountpoint}: Connection reestablished.")
                 break
-            except OSError, TimeoutError:
+            except (OSError, TimeoutError):
                 sleepTime = 5
                 logger.error(
                     f"{self.mountpoint}: Will retry NTRIP connection in {sleepTime} seconds!"

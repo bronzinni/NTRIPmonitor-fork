@@ -962,13 +962,13 @@ if __name__ == "__main__":
     # Set up logging
     logformat = "%(asctime)s:%(name)s:%(levelname)s:%(message)s"
     if args.logfile:
-        logger.basicConfig(
+        logging.basicConfig(
             level=logLevel,
             filename=args.logfile,
             format=logformat,
         )
     else:
-        logger.basicConfig(level=logLevel, format=logformat)
+        logging.basicConfig(level=logLevel, format=logformat)
 
     load_dotenv()
     # casterSettingsDict contains the Caster instances (dataclass) for all casters
