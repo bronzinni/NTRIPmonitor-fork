@@ -128,6 +128,8 @@ class DecoderPOS(Decoder):
 
 
 class DecoderMSM(Decoder):
+    SPEED_OF_LIGHT_KMS = 299792.458
+
     def __init__(self, params):
         super().__init__(params)
         self.data = params["data"]
@@ -196,48 +198,75 @@ class DecoderMSM(Decoder):
                     constellation_id = "C"
 
             if self.messageType >= 1071 and self.messageType <= 1127:
-                obsEpochStr = DecoderMSM.gnssEpochStr(self.messageType, self.data[0][2] / 1000.0)
-                satSignals = rtcmmessage.msmSignalTypes(self.messageType, self.data[0][10])
+                obsEpochStr = DecoderMSM.gnssEpochStr(
+                    self.messageType, self.data[0][2] / 1000.0
+                )
+                satSignals = rtcmmessage.msmSignalTypes(
+                    self.messageType, self.data[0][10]
+                )
                 signalCount = len(satSignals)
                 availSatMask = str(self.data[0][9])
-                satId = [
-                    id + 1
-                    for id in range(64)
-                    if availSatMask[id] == "1"
-                ]
+                satId = [id + 1 for id in range(64) if availSatMask[id] == "1"]
                 messageType_mod = self.messageType % 10
-                if messageType_mod == 5:
+                if messageType_mod == 4:
                     codeFineScaling = pow(2, -24)
                     phaseFineScaling = pow(2, -29)
                     snrScaling = 1
+                    rough_range_index = (
+                        1  # See table 3.5-80 and 3.5-81 in RTCM standard 3.2
+                    )
+                    phase_range_rate_index = None
+                elif messageType_mod == 5:
+                    codeFineScaling = pow(2, -24)
+                    phaseFineScaling = pow(2, -29)
+                    snrScaling = 1
+                    rough_range_index = 2
+                    phase_range_rate_index = 3
+                elif messageType_mod == 6:
+                    codeFineScaling = pow(2, -29)
+                    phaseFineScaling = pow(2, -31)
+                    snrScaling = pow(2, -4)
+                    rough_range_index = 1
+                    phase_range_rate_index = None
                 elif messageType_mod == 7:
                     codeFineScaling = pow(2, -29)
                     phaseFineScaling = pow(2, -31)
                     snrScaling = pow(2, -4)
+                    rough_range_index = 2
+                    phase_range_rate_index = 3
                 availObsNo = 0
                 availObsMask = str(self.data[0][11])
-                allObs = []
 
                 for satNo, sat in enumerate(self.data[1]):
-                    satRoughRange = sat[0] + sat[2] / 1024.0
-                    satRoughRangeRate = sat[3]
+                    satRoughRange = sat[0] + sat[rough_range_index] / 1024.0
+
+                    if phase_range_rate_index:
+                        satRoughRangeRate = sat[phase_range_rate_index]
 
                     for signalNo, satSignal in enumerate(satSignals):
                         if availObsMask[satNo * signalCount + signalNo] == "1":
-                            obsCode = (
+                            obsCode = self.SPEED_OF_LIGHT_KMS * (
                                 satRoughRange
                                 + self.data[2][availObsNo][0] * codeFineScaling
                             )
-                            obsPhase = (
+                            # if self.messageType < 1078 and satId[satNo] == 5 and satSignal == '1C':
+                            #     logger.info(f"{messageType_mod} {satId[satNo]} {satSignal} {sat}, {self.SPEED_OF_LIGHT_KMS*sat[rough_range_index]/1024.0}  {self.data[2][availObsNo][0]*codeFineScaling*self.SPEED_OF_LIGHT_KMS}, {obsCode}")
+
+                            obsPhase = self.SPEED_OF_LIGHT_KMS * (
                                 satRoughRange
                                 + self.data[2][availObsNo][1] * phaseFineScaling
                             )
                             obsLockTimeIndicator = self.data[2][availObsNo][2]
                             obsSnr = self.data[2][availObsNo][4] * snrScaling
-                            obsDoppler = (
-                                satRoughRangeRate + self.data[2][availObsNo][5] * 0.0001
-                            )
-                            self.decodedObs.append((
+                            obsDoppler = None
+                            if phase_range_rate_index:
+                                obsDoppler = (
+                                    satRoughRangeRate
+                                    + self.data[2][availObsNo][5] * 0.0001
+                                )
+
+                            self.decodedObs.append(
+                                (
                                     self.mountPoint,
                                     obsEpochStr,
                                     self.messageType,
@@ -249,7 +278,8 @@ class DecoderMSM(Decoder):
                                     obsDoppler,
                                     obsSnr,
                                     obsLockTimeIndicator,
-                            ))
+                                )
+                            )
                             availObsNo += 1
         except Exception as error:
             logger.error(
