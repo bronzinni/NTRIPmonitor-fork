@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import UTC, datetime
 from math import pow
 from time import gmtime, strftime, time
 
@@ -21,18 +21,14 @@ class Decoder(ABC):
         decodedFrames = []
         decodedObs = []
         for params in encodedFrames:
-            try:
-                decodedFrame, decoderResult = Decoder.getDecoder(
-                    params, storeObsCheck, rtcmMessage
-                )
-                decodedFrames.append(decodedFrame)
-                if decoderResult is not None:
-                    decodedObs.append(decoderResult["decodedObs"])
-                else:
-                    decodedObs.append(None)
-            except Exception as error:
-                logger.error(f"Errors in grabbing decoder class : {error}")
-                continue
+            decodedFrame, decoderResult = Decoder.getDecoder(
+                params, storeObsCheck, rtcmMessage
+            )
+            decodedFrames.append(decodedFrame)
+            if decoderResult is not None:
+                decodedObs.append(decoderResult["decodedObs"])
+            else:
+                decodedObs.append(None)
         return decodedFrames, decodedObs
 
     @staticmethod
@@ -41,7 +37,7 @@ class Decoder(ABC):
             params["msg_type"], params["data"] = rtcmMessage.decodeRtcmFrame(
                 params["frame"]
             )
-        except Exception as error:
+        except (KeyError, TypeError, ValueError) as error:
             logger.error(
                 f"Failed to decode RTCM frame: {params['frame']} with error: {error}"
             )
@@ -58,14 +54,9 @@ class Decoder(ABC):
             else:
                 logger.debug(f"Message type {params['msg_type']} supported")
                 decoderInstance = decoderClass(params)
-                try:
-                    decodedObs = decoderInstance.decode()
-                    if decodedObs is None or not decodedObs:
-                        return decodedFrame, None
-                except Exception as error:
-                    logger.error(
-                        f"Failed to decode RTCM observation frame with error: {error}"
-                    )
+
+                decodedObs = decoderInstance.decode()
+                if decodedObs is None or not decodedObs:
                     return decodedFrame, None
         return decodedFrame, decodedObs
 
@@ -87,7 +78,7 @@ class Decoder(ABC):
                 "msg_type": params["msg_type"],
                 "msg_size": params["msg_size"],
             }
-        except Exception as error:
+        except (KeyError, ValueError) as error:
             logger.info(
                 f"Failed to decode simple metadata {params['msg_type']}: {error}"
             )
@@ -118,7 +109,7 @@ class DecoderPOS(Decoder):
                 antHgt = self.data[1][3] / 10000.0
 
             self.decodedObs.append([self.messageType, self.mountPoint, x, y, z, antHgt])
-        except Exception as error:
+        except KeyError as error:
             logger.error(
                 f"Failed to decode ARP message {self.messageType} with error: {error}. Setting observation to None."
             )
@@ -177,7 +168,9 @@ class DecoderMSM(Decoder):
         if use_stored_procedure:  # With stored procedure
             epochStr = strftime(f"%Y-%m-%d %H:%M:%S.{microseconds} z", gmtime(obsTime))
         else:  # Without stored procedure
-            epochStr = datetime.fromtimestamp(obsTime).replace(microsecond=microseconds)
+            epochStr = datetime.fromtimestamp(obsTime, tz=UTC).replace(
+                microsecond=microseconds
+            )
         return epochStr
 
     def decode(self):
@@ -281,7 +274,7 @@ class DecoderMSM(Decoder):
                                 )
                             )
                             availObsNo += 1
-        except Exception as error:
+        except (KeyError, ValueError) as error:
             logger.error(
                 f"Failed to decode MSM message {self.messageType} with error: {error}. Setting observation to None."
             )

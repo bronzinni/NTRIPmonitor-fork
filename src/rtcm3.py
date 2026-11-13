@@ -1,4 +1,5 @@
 from time import time
+from typing import ClassVar
 
 from bitstring import Bits, pack
 
@@ -147,7 +148,7 @@ class Rtcm3:
             or (1111 <= messageType <= 1117)
             or (1121 <= messageType <= 1127)
         ):
-            head, numSats, numSignals, numCells = self.__decodeMsmHeader(message)
+            head, numSats, _, numCells = self.__decodeMsmHeader(message)
             sat_obs = self.msm_sat_obs[messageType % 10]
             signal_obs = self.msm_signal_obs[messageType % 10]
 
@@ -173,7 +174,7 @@ class Rtcm3:
         else:
             return f"Message type {messageType} currently not implemented"
 
-    messageDescriptionText = {
+    messageDescriptionText: ClassVar[dict[int, str]] = {
         1001: "L1-Only GPS RTK Observables",
         1002: "Extended L1-Only GPS RTK Observables",
         1003: "L1 & L2 GPS RTK Observables",
@@ -424,34 +425,37 @@ class Rtcm3:
         "bin:64, bin:32"
     )
     __msgMsmHeadGlonassEpoch = "pad:24, uint:3, uint:27"
-    __msgMsm123Sat = ["uint:10"]
-    __msgMsm46Sat = ["uint:8", "uint:10"]
-    __msgMsm57Sat = [
+    __msgMsm123Sat = ("uint:10",)
+    __msgMsm46Sat = (
+        "uint:8",
+        "uint:10",
+    )
+    __msgMsm57Sat = (
         "uint:8",
         "uint:4",
         "uint:10",
         "int:14",
-    ]
-    __msgMsm1Signal = ["int:15"]
-    __msgMsm2Signal = [
+    )
+    __msgMsm1Signal = ("int:15",)
+    __msgMsm2Signal = (
         "int:22",
         "uint:4",
         "bool",
-    ]
+    )
     __msgMsm3Signal = __msgMsm1Signal + __msgMsm2Signal
-    __msgMsm4Signal = __msgMsm3Signal + ["uint:6"]
-    __msgMsm5Signal = __msgMsm4Signal + ["int:15"]
-    __msgMsm6Signal = [
+    __msgMsm4Signal = __msgMsm3Signal + ("uint:6",)
+    __msgMsm5Signal = __msgMsm4Signal + ("int:15",)
+    __msgMsm6Signal = (
         "int:20",
         "int:24",
         "uint:10",
         "bool",
         "uint:10",
-    ]
-    __msgMsm7Signal = __msgMsm6Signal + ["int:15"]
+    )
+    __msgMsm7Signal = __msgMsm6Signal + ("int:15",)
 
     # MSM observation types
-    __msmSignalTypes = {
+    __msmSignalTypes: ClassVar[dict[str, list[str]]] = {
         "GPS": [
             "Re",
             "1C",
@@ -659,7 +663,7 @@ class Rtcm3:
     }
 
     # MSM constellations
-    __msmConstellations = {
+    __msmConstellations: ClassVar[dict[int, str]] = {
         7: "GPS",
         8: "GLONASS",
         9: "GALILEO",

@@ -73,13 +73,9 @@ class NtripClients:
         except TimeoutError as error:
             raise TimeoutError(
                 f"Connection to {casterUrl} timed out: {error}"
-            ) from None
-            logger.error(f"Connection to {casterUrl} timed out: {error}")
-            return False
+            ) from error
         except OSError as error:
-            raise OSError(f"Connection to {casterUrl} failed with: {error}") from None
-            logger.error(f"Connection to {casterUrl} failed with: {error}")
-            return False
+            raise OSError(f"Connection to {casterUrl} failed with: {error}") from error
         logger.info(
             f"{self.ntripMountPoint}: Connection to {casterUrl} open. Ready to write."
         )
@@ -124,9 +120,9 @@ class NtripClients:
         self,
         casterUrl: str,
         ntripMountPoint: str,
-        ntripUser: str = None,
-        ntripPassword: str = None,
-        nmeaString: str = None,
+        ntripUser: str | None = None,
+        ntripPassword: str | None = None,
+        nmeaString: str | None = None,
     ) -> None:
         """
 
@@ -179,8 +175,8 @@ class NtripClients:
         self,
         casterUrl: str,
         ntripMountPoint: str,
-        ntripUser: str = None,
-        ntripPassword: str = None,
+        ntripUser: str | None = None,
+        ntripPassword: str | None = None,
         ntripVersion: int = 2,
     ) -> None:
         """
@@ -405,7 +401,11 @@ class NtripClients:
         return ntripSourcetable
 
     async def requestNtripStream(
-        self, casterUrl: str, mountPoint: str, user: str = None, passwd: str = None
+        self,
+        casterUrl: str,
+        mountPoint: str,
+        user: str | None = None,
+        passwd: str | None = None,
     ) -> None:
         """
 
@@ -495,7 +495,7 @@ class NtripClients:
                     if timeStampFlag == 0:
                         timeStamp = time()
                         timeStampFlag = 1
-                except Exception as error:
+                except OSError as error:
                     raise error("Unchunked stream read failed.")
 
             if self.ntripStreamChunked and receivedBits.length != length * 8:
@@ -526,7 +526,7 @@ class NtripClients:
             frames_in_buffer = []
             while self.rtcmFramePreample and self.rtcmFrameBuffer.length >= 48:
                 self.rtcmFrameBuffer.pos = 0
-                (rtcmPreAmple, rtcmPayloadLength) = self.rtcmFrameBuffer.peeklist(
+                (_, rtcmPayloadLength) = self.rtcmFrameBuffer.peeklist(
                     NtripClients.RTCM3FRAMEHEADERFORMAT
                 )
                 rtcmFrameLength = (rtcmPayloadLength + 6) * 8

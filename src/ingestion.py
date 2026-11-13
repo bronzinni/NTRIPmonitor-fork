@@ -104,7 +104,7 @@ async def watchdogHandler(
                         ),
                         name=mountpoint,
                     )
-                    logging.warning(f"{mountpoint} RTCM stream restarted.")
+                    logger.warning(f"{mountpoint} RTCM stream restarted.")
 
             await asyncio.sleep(30)  # Sleep for 30 seconds
     except asyncio.CancelledError:
@@ -137,7 +137,7 @@ async def decodeInsertConsumer(
             dBHandler = NtripObservationHandler(dbSettings)
             await dBHandler.initializePool()
             break
-        except Exception as error:
+        except OSError as error:
             fail += 1
             sleepTime = 5 * fail
             sleepTime = min(sleepTime, 300)
@@ -174,11 +174,11 @@ async def decodeInsertConsumer(
                             encodedFrames, dbSettings.storeObservations, rtcmMessage
                         )
                         await dBHandler.dbInsertBatch(decodedFrames, decodedObs)
-                    except Exception as error:
+                    except OSError as error:
                         logger.error(
                             f"An error occurred while batch decoding or batch inserting: {error}"
                         )
-    except Exception as error:
+    except OSError as error:
         logger.error(f"An error occurred while decoding and appending {error}")
     finally:
         if dBHandler:
@@ -250,7 +250,7 @@ async def appendToList(listToAppend, sharedList, lock):
     await loop.run_in_executor(None, lock.acquire)
     try:
         sharedList.append(listToAppend)
-    except Exception as error:
+    except OSError as error:
         logger.error(f"An error occurred while appending to list: {error}")
     finally:
         lock.release()
@@ -273,7 +273,7 @@ async def periodicFrameAppender(
                 #     f"{mountPoint}: {len(encodedFrames)} frames collected. Appended to shared memory. {[frame["mountpoint_id"] for frame in encodedFrames]}"
                 # )
                 encodedFrames.clear()
-            except Exception as error:
+            except OSError as error:
                 logger.error(
                     f"An error occurred in periodic check for appending frames: {error}"
                 )
@@ -319,12 +319,12 @@ async def procRtcmStream(
                             "mountpoint_id": mountPoint.mountpoint_id,
                         }
                     )
-            except (OSError, ConnectionError, IndexError):
+            except (OSError, IndexError):
                 ntripclient = await ntripLogger.requestStream(
                     ntripclient, casterSettings, log_disconnect=True
                 )
-    except Exception as error:
-        logging.error(f"{mountPoint}: RTCM stream task failed: {error!r}")
+    except OSError as error:
+        logger.error(f"{mountPoint}: RTCM stream task failed: {error!r}")
         await ntripLogger.closePool()
 
     # we end here by closing the connection
@@ -420,7 +420,7 @@ async def downloadSourceTable(
 
                 logger.info(f"Source table received for caster {caster}.")
                 break  # If the source table is successfully received, break the loop
-            except Exception as error:
+            except OSError as error:
                 fail += 1
                 sleepTime = 5 * fail
                 sleepTime = min(sleepTime, 300)
@@ -448,9 +448,9 @@ async def downloadSourceTable(
                     logger.debug(
                         f"Inserted {caster} into the database with id {casterId}. Gathering info on {casterSettings.mountpoints}"
                     )
-                except Exception as exc:
+                except AttributeError as error:
                     logger.error(
-                        f"Failed to write caster {caster} to database: {exc}. Skipping"
+                        f"Failed to write caster {caster} to database: {error}. Skipping"
                     )
                     continue
 
@@ -484,9 +484,9 @@ async def downloadSourceTable(
                             mountpoint.bitrate = int(sourceCols[17])
                             mountpoint.misc = sourceCols[18]
 
-                except Exception as exc:
+                except (KeyError, TypeError) as error:
                     logger.error(
-                        f"Failed to read source table information {exc}. Continuing without details."
+                        f"Failed to read source table information {error}. Continuing without details."
                     )
 
                 try:
@@ -511,9 +511,9 @@ async def downloadSourceTable(
                     logger.debug(
                         f"Inserted {len(casterSettings.mountpoints)} mountpoints metadata into the database with ids {mountpoint_ids}."
                     )
-                except Exception as exc:
+                except (ValueError, TypeError, KeyError, AttributeError) as error:
                     logger.error(
-                        f"Failed to write mountpoints {casterSettings.mountpoints} to database: {exc}."
+                        f"Failed to write mountpoints {casterSettings.mountpoints} to database: {error}."
                     )
 
 
@@ -527,7 +527,7 @@ async def periodicSourceTableRefresh(
         await asyncio.sleep(interval)
         try:
             await downloadSourceTable(casterSettingsDict, dbSettings)
-        except Exception as error:
+        except (OSError, ValueError) as error:
             logger.error(
                 f"Sourcetable refresh failed, retrying in {interval} s: {error}"
             )
@@ -862,7 +862,7 @@ def RunMultiProcessing(
         for proc in readingProcesses + decoderProcesses:
             proc.process.join(timeout=15)
             if proc.process.exitcode is None:
-                logging.warning(f"Terminating {proc}.")
+                logger.warning(f"Terminating {proc}.")
                 proc.process.terminate()
                 proc.process.join(timeout=5)
                 if proc.process.exitcode is None:
@@ -898,11 +898,11 @@ def main(
     )  # Setup statistics
 
     # Download the source table from casters.
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         loop.run_until_complete(downloadSourceTable(casterSettingsDict, dbSettings))
-    except Exception as error:
+    except (OSError, ValueError) as error:
         logger.error(f"Failed to retrieve source tables: {error}.")
 
     # reduce caster dictionary to contain only active casters
@@ -962,13 +962,13 @@ if __name__ == "__main__":
     # Set up logging
     logformat = "%(asctime)s:%(name)s:%(levelname)s:%(message)s"
     if args.logfile:
-        logging.basicConfig(
+        logger.basicConfig(
             level=logLevel,
             filename=args.logfile,
             format=logformat,
         )
     else:
-        logging.basicConfig(level=logLevel, format=logformat)
+        logger.basicConfig(level=logLevel, format=logformat)
 
     load_dotenv()
     # casterSettingsDict contains the Caster instances (dataclass) for all casters

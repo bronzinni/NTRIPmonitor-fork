@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 from time import gmtime, strftime, time
+from typing import ClassVar
 
 import asyncpg
 
@@ -34,8 +35,8 @@ class DatabaseHandler:
         if self.pool:
             try:
                 await asyncio.wait_for(self.pool.close(), timeout)
-            except Exception as error:
-                logging.warning(f"Pool close failed, terminating: {error!r}")
+            except TimeoutError as error:
+                logger.warning(f"Pool close failed, terminating: {error!r}")
                 self.pool.terminate()
 
     async def getConnection(self):
@@ -124,7 +125,7 @@ class DatabaseConnection:
 
 
 class NtripObservationHandler(DatabaseHandler):
-    INPUTTABLE = {
+    INPUTTABLE: ClassVar[dict[int, str]] = {
         1001: "insert_observations",
         1002: "insert_observations",
         1003: "insert_observations",
@@ -257,7 +258,7 @@ class NtripObservationHandler(DatabaseHandler):
                 logger.debug(
                     "RTCM package IDs returned None. Not storing observations."
                 )
-        except Exception as error:
+        except (asyncpg.PostgresError, TypeError) as error:
             logger.error(f"Failed to insert and commit data to database with: {error}.")
 
 
@@ -281,8 +282,8 @@ class NtripLogHandler(DatabaseHandler):
                     "SELECT insert_disconnect_log($1::json)",
                     json.dumps([self.mountpoint, disconnect_time]),
                 )
-        except Exception as error:
-            logging.error(
+        except (asyncpg.PostgresError, OSError, TypeError) as error:
+            logger.error(
                 f"{self.mountpoint}: Could not insert disconnect log: {error!r}"
             )
 
@@ -298,8 +299,8 @@ class NtripLogHandler(DatabaseHandler):
                     "SELECT update_reconnect_log($1::json)",
                     json.dumps([self.disconnect_id, reconnect_time]),
                 )
-        except Exception as error:
-            logging.error(
+        except (asyncpg.PostgresError, OSError, TypeError) as error:
+            logger.error(
                 f"{self.mountpoint}: Could not update reconnect log: {error!r}"
             )
         self.disconnect_id = None
@@ -342,7 +343,7 @@ class NtripLogHandler(DatabaseHandler):
                     await self.update_reconnect_log()
                     logger.info(f"{self.mountpoint}: Connection reestablished.")
                 break
-            except Exception:
+            except OSError, TimeoutError:
                 sleepTime = 5
                 logger.error(
                     f"{self.mountpoint}: Will retry NTRIP connection in {sleepTime} seconds!"
