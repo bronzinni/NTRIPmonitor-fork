@@ -16,14 +16,10 @@ settings. The settings include the details for the NTRIP caster and the database
 import asyncio
 import json
 import logging
-import signal
-import os
-import sys
-from argparse import ArgumentParser
-from configparser import ConfigParser
 import math
 import os
 import signal
+import sys
 from argparse import ArgumentParser
 from multiprocessing import Lock, Manager, Pipe, Process
 from multiprocessing.connection import Connection
