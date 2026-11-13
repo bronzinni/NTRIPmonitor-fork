@@ -1,19 +1,20 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Base version : Lars Stenseng
 
 import asyncio
 import logging
 from base64 import b64encode
 from time import gmtime, strftime, time
-from typing import Union
 from urllib.parse import urlsplit
 
 from bitstring import Bits, BitStream
-from crc import crc24q
+
 from __version__ import __version__
+from crc import crc24q
 
 TIMEOUT_READ_STREAM = 10.0
+
+logger = logging.getLogger(__name__)
+
 
 class NtripClients:
     RTCM3FRAMEPREAMPLE = Bits(bin="0b11010011")
@@ -73,15 +74,14 @@ class NtripClients:
             raise TimeoutError(
                 f"Connection to {casterUrl} timed out: {error}"
             ) from None
-            logging.error(f"Connection to {casterUrl} timed out: {error}")
+            logger.error(f"Connection to {casterUrl} timed out: {error}")
             return False
         except OSError as error:
             raise OSError(f"Connection to {casterUrl} failed with: {error}") from None
-            logging.error(f"Connection to {casterUrl} failed with: {error}")
+            logger.error(f"Connection to {casterUrl} failed with: {error}")
             return False
-        logging.info(
-            f"{self.ntripMountPoint}: Connection to {casterUrl} open. "
-            "Ready to write."
+        logger.info(
+            f"{self.ntripMountPoint}: Connection to {casterUrl} open. Ready to write."
         )
         return True
 
@@ -241,7 +241,7 @@ class NtripClients:
                 "\r\n"
             ).encode("ISO-8859-1")
 
-    def getHeaderStrings(self, rawHeader: Union[bytes, list]) -> str:
+    def getHeaderStrings(self, rawHeader: bytes | list) -> str:
         """
 
 
@@ -289,7 +289,7 @@ class NtripClients:
                 raise ConnectionError(
                     f"Connection to {self.casterUrl} failed with: {error}"
                 ) from None
-                logging.error(f"Connection to {self.casterUrl} failed with: {error}")
+                logger.error(f"Connection to {self.casterUrl} failed with: {error}")
             ntripResponseHeaderTimestamp.append(time())
             if not line:
                 break
@@ -301,9 +301,7 @@ class NtripClients:
             line.lower() for line in self.ntripResponseHeader
         ]:
             self.ntripStreamChunked = True
-            logging.info(
-                f"{self.ntripMountPoint}: Stream is chunked. Correctly applied"
-            )
+            logger.info(f"{self.ntripMountPoint}: Stream is chunked. Correctly applied")
         statusResponse = self.ntripResponseHeader[0].split(" ")
         if len(statusResponse) > 1:
             self.ntripResponseStatusCode = statusResponse[1]
@@ -330,12 +328,12 @@ class NtripClients:
             self.rtcmFrameAligned = False
             return True
         else:
-            logging.error(
+            logger.error(
                 f"{self.ntripMountPoint}: Response error "
                 f"{self.ntripResponseStatusCode}!"
             )
             for line in self.ntripResponseHeader:
-                logging.error(f"{self.ntripMountPoint}: TCP response: {line}")
+                logger.error(f"{self.ntripMountPoint}: TCP response: {line}")
             raise ConnectionError(
                 f"{self.ntripMountPoint}: {self.ntripResponseHeader[0]}"
             )
@@ -355,12 +353,12 @@ class NtripClients:
         self.ntripWriter.write(self.ntripRequestHeader)
         await self.ntripWriter.drain()
         for line in self.getHeaderStrings(self.ntripRequestHeader):
-            logging.debug(f"TCP request: {line}")
-        logging.info(f"{self.ntripMountPoint}: Request sent.")
+            logger.debug(f"TCP request: {line}")
+        logger.info(f"{self.ntripMountPoint}: Request sent.")
         await self.getNtripResponseHeader()
         if await self.ntripResponseStatusOk():
             for line in self.ntripResponseHeader:
-                logging.debug(f"TCP response: {line}")
+                logger.debug(f"TCP response: {line}")
 
     async def requestSourcetable(self, casterUrl: str) -> list:
         """
@@ -399,7 +397,7 @@ class NtripClients:
             line = line.decode("ISO-8859-1").rstrip()
             if line == "ENDSOURCETABLE":
                 ntripSourcetable.append(line)
-                logging.info("Source table received.")
+                logger.info("Source table received.")
                 break
             else:
                 ntripSourcetable.append(line)
@@ -445,14 +443,14 @@ class NtripClients:
         timeStampFlag = 0
         while not rtcmFrameComplete:
             if self.ntripStreamChunked:
-                logging.debug(f"{self.ntripMountPoint}: Chunked stream.")
+                logger.debug(f"{self.ntripMountPoint}: Chunked stream.")
                 try:
-                    logging.debug(f"{self.ntripMountPoint}: Awaiting next break...")
+                    logger.debug(f"{self.ntripMountPoint}: Awaiting next break...")
                     rawLine = await asyncio.wait_for(
                         self.ntripReader.readuntil(b"\r\n"), TIMEOUT_READ_STREAM
                     )
                     length = int(rawLine[:-2].decode("ISO-8859-1"), 16)
-                    logging.debug(f"{self.ntripMountPoint}: Awaiting a chunk...")
+                    logger.debug(f"{self.ntripMountPoint}: Awaiting a chunk...")
                     rawLine = await asyncio.wait_for(
                         self.ntripReader.readexactly(length + 2),
                         TIMEOUT_READ_STREAM,
@@ -464,7 +462,7 @@ class NtripClients:
                     asyncio.IncompleteReadError,
                     asyncio.LimitOverrunError,
                 ) as error:
-                    logging.error(
+                    logger.error(
                         f"Connection to {self.casterUrl} failed with: {error}"
                         "during data reception."
                     )
@@ -473,7 +471,7 @@ class NtripClients:
                         "during data reception."
                     ) from None
                 except TimeoutError as error:
-                    logging.error(
+                    logger.error(
                         f"Connection to {self.casterUrl} timed out during data reception: {error}."
                     )
                     raise ConnectionError(
@@ -481,16 +479,16 @@ class NtripClients:
                     ) from None
 
                 if rawLine[-2:] != b"\r\n":
-                    logging.error(
+                    logger.error(
                         f"{self.ntripMountPoint}: Chunk malformed. Expected \r\n as ending. Closing connection!"
                     )
-                    raise IOError("Chunk malformed.")
+                    raise OSError("Chunk malformed.")
                 receivedBits = BitStream(rawLine[:-2])
-                logging.debug(
+                logger.debug(
                     f"{self.ntripMountPoint}: Chunk {receivedBits.length}:{length * 8}."
                 )
             else:
-                logging.debug(f"{self.ntripMountPoint}: Stream not chunked.")
+                logger.debug(f"{self.ntripMountPoint}: Stream not chunked.")
                 try:
                     rawLine = await self.ntripReader.read(128)
                     receivedBits = BitStream(rawLine)
@@ -501,16 +499,16 @@ class NtripClients:
                     raise error("Unchunked stream read failed.")
 
             if self.ntripStreamChunked and receivedBits.length != length * 8:
-                logging.error(
+                logger.error(
                     f"{self.ntripMountPoint}:Chunk incomplete "
                     f"{receivedBits.length}:{length * 8}. "
                     "Closing connection! "
                 )
-                raise IOError("Chunk incomplete.")
+                raise OSError("Chunk incomplete.")
 
             self.rtcmFrameBuffer += receivedBits
 
-            logging.debug(
+            logger.debug(
                 f"{self.ntripMountPoint}: Bits received: {receivedBits.length}. self.rtcmFrameAligned: {self.rtcmFrameAligned}, self.rtcmFramePreample: {self.rtcmFramePreample}, self.rtcmFrameBuffer.length: {self.rtcmFrameBuffer.length}"
             )
 
@@ -532,7 +530,7 @@ class NtripClients:
                     NtripClients.RTCM3FRAMEHEADERFORMAT
                 )
                 rtcmFrameLength = (rtcmPayloadLength + 6) * 8
-                logging.debug(
+                logger.debug(
                     f"{self.ntripMountPoint}: rtcmFrameLength: {rtcmFrameLength} and self.rtcmFrameBuffer.length {self.rtcmFrameBuffer.length}"
                 )
                 if self.rtcmFrameBuffer.length >= rtcmFrameLength:
@@ -544,21 +542,21 @@ class NtripClients:
                         rtcmFrameLength_before = self.rtcmFrameBuffer.length
                         self.rtcmFrameBuffer = self.rtcmFrameBuffer[rtcmFrameLength:]
                         frames_in_buffer.append(rtcmFrame)
-                        logging.debug(
+                        logger.debug(
                             f"{self.ntripMountPoint}: Frame {len(frames_in_buffer)} complete, {rtcmFrameLength_before - self.rtcmFrameBuffer.length}. self.rtcmFrameBuffer.length: {self.rtcmFrameBuffer.length}."
                         )
                         rtcmFrameComplete = True
                     else:
                         self.rtcmFrameAligned = False
                         self.rtcmFrameBuffer = self.rtcmFrameBuffer[8:]
-                        logging.warning(
+                        logger.warning(
                             f"{self.ntripMountPoint}:CRC mismatch "
                             f"{hex(calcCrc)} != {rtcmFrame[-24:]}."
                             f" Realigning!"
                         )
                 else:
                     break
-        logging.debug(
+        logger.debug(
             f"{self.ntripMountPoint}: Extracted {len(frames_in_buffer)} frames from buffer. Returning..."
         )
         return frames_in_buffer, timeStamp
