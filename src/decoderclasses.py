@@ -8,18 +8,23 @@ from rtcm3 import Rtcm3
 
 logger = logging.getLogger(__name__)
 
+
 class Decoder(ABC):
-    def __init__(self,params):
+    def __init__(self, params):
         self.params = params
-        self.data = params.get('data', None)
+        self.data = params.get("data", None)
 
     @staticmethod
-    async def batchDecodeFrame(encodedFrames: list, storeObsCheck: bool, rtcmMessage: Rtcm3):
+    async def batchDecodeFrame(
+        encodedFrames: list, storeObsCheck: bool, rtcmMessage: Rtcm3
+    ):
         decodedFrames = []
         decodedObs = []
         for params in encodedFrames:
             try:
-                decodedFrame, decoderResult = Decoder.getDecoder(params, storeObsCheck, rtcmMessage)
+                decodedFrame, decoderResult = Decoder.getDecoder(
+                    params, storeObsCheck, rtcmMessage
+                )
                 decodedFrames.append(decodedFrame)
                 if decoderResult is not None:
                     decodedObs.append(decoderResult["decodedObs"])
@@ -32,17 +37,21 @@ class Decoder(ABC):
 
     @staticmethod
     def getDecoder(params, storeObsCheck, rtcmMessage: Rtcm3):
-        try: 
-            params['msg_type'], params['data'] = rtcmMessage.decodeRtcmFrame(params['frame'])
+        try:
+            params["msg_type"], params["data"] = rtcmMessage.decodeRtcmFrame(
+                params["frame"]
+            )
         except Exception as error:
-            logger.error(f"Failed to decode RTCM frame with error: {error}")
+            logger.error(
+                f"Failed to decode RTCM frame: {params['frame']} with error: {error}"
+            )
             return None, None
         decodedFrame = Decoder.rtcmSimpleMetadata(params)
         # decoderClass = None
         decodedObs = None
         # logger.info(params['msg_type'])
         if storeObsCheck:
-            decoderClass = DECODER_MAP.get(params['msg_type'])
+            decoderClass = DECODER_MAP.get(params["msg_type"])
             if decoderClass is None:
                 logger.debug(f"Message type {params['msg_type']} not supported")
                 return decodedFrame, None
@@ -54,7 +63,9 @@ class Decoder(ABC):
                     if decodedObs is None or not decodedObs:
                         return decodedFrame, None
                 except Exception as error:
-                    logger.error(f"Failed to decode RTCM observation frame with error: {error}")
+                    logger.error(
+                        f"Failed to decode RTCM observation frame with error: {error}"
+                    )
                     return decodedFrame, None
         return decodedFrame, decodedObs
 
@@ -68,18 +79,19 @@ class Decoder(ABC):
             # else:
             #     pass
             decodedFrame = {
-                "mountpoint_id": params['mountpoint_id'],
+                "mountpoint_id": params["mountpoint_id"],
                 "time_received": strftime(
                     f"%Y-%m-%d %H:%M:%S.{int(params['time_received'] % 1 * 1000000):06}",
-                    gmtime(params['time_received']),
+                    gmtime(params["time_received"]),
                 ),
-                "msg_type": params['msg_type'],
-                "msg_size": params['msg_size']
+                "msg_type": params["msg_type"],
+                "msg_size": params["msg_size"],
             }
         except Exception as error:
-            logger.info(f"Failed to decode simple metadata {params['msg_type']}: {error}")
+            logger.info(
+                f"Failed to decode simple metadata {params['msg_type']}: {error}"
+            )
         return decodedFrame
-
 
     @abstractmethod
     def decode(self):
@@ -89,9 +101,9 @@ class Decoder(ABC):
 class DecoderPOS(Decoder):
     def __init__(self, params):
         super().__init__(params)
-        self.data = params['data']
-        self.mountPoint = params['mountpoint_id']
-        self.messageType = params['msg_type']
+        self.data = params["data"]
+        self.mountPoint = params["mountpoint_id"]
+        self.messageType = params["msg_type"]
         self.decodedObs = []
 
     def decode(self):
@@ -104,33 +116,32 @@ class DecoderPOS(Decoder):
             antHgt = None
             if self.messageType == 1006:
                 antHgt = self.data[1][3] / 10000.0
-            
-            self.decodedObs.append([self.messageType,
-                               self.mountPoint,
-                               x,
-                               y,
-                               z,
-                               antHgt])
+
+            self.decodedObs.append([self.messageType, self.mountPoint, x, y, z, antHgt])
         except Exception as error:
-            logger.error(f"Failed to decode ARP message {self.messageType} with error: {error}. Setting observation to None.")
+            logger.error(
+                f"Failed to decode ARP message {self.messageType} with error: {error}. Setting observation to None."
+            )
             self.decodedObs = None
-        
+
         return {"decodedObs": self.decodedObs}
 
 
 class DecoderMSM(Decoder):
     def __init__(self, params):
         super().__init__(params)
-        self.data = params['data']
-        self.timeStampInFrame = params['time_received']
-        self.messageSize = params['msg_size']
-        self.mountPoint = params['mountpoint_id']
-        self.messageType = params['msg_type']
+        self.data = params["data"]
+        self.timeStampInFrame = params["time_received"]
+        self.messageSize = params["msg_size"]
+        self.mountPoint = params["mountpoint_id"]
+        self.messageType = params["msg_type"]
         self.decodedFrame = []
         self.decodedObs = []
 
     @staticmethod
-    def gnssEpochStr(messageType: int, obsEpoch: float, use_stored_procedure: bool = True) -> str:
+    def gnssEpochStr(
+        messageType: int, obsEpoch: float, use_stored_procedure: bool = True
+    ) -> str:
         # Get the current time in seconds since the epoch
         now = time()
         # Calculate the number of seconds that have passed today
@@ -163,7 +174,7 @@ class DecoderMSM(Decoder):
         # Convert the observation time to a string in the format "YYYY-MM-DD HH:MM:SS.microseconds Z"
         if use_stored_procedure:  # With stored procedure
             epochStr = strftime(f"%Y-%m-%d %H:%M:%S.{microseconds} z", gmtime(obsTime))
-        else: # Without stored procedure
+        else:  # Without stored procedure
             epochStr = datetime.fromtimestamp(obsTime).replace(microsecond=microseconds)
         return epochStr
 
@@ -241,9 +252,12 @@ class DecoderMSM(Decoder):
                             ))
                             availObsNo += 1
         except Exception as error:
-            logger.error(f"Failed to decode MSM message {self.messageType} with error: {error}. Setting observation to None.")
+            logger.error(
+                f"Failed to decode MSM message {self.messageType} with error: {error}. Setting observation to None."
+            )
             self.decodedObs = None
         return {"decodedObs": self.decodedObs}
+
 
 DECODER_MAP = {
     1005: DecoderPOS,

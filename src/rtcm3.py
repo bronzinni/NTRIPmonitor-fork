@@ -106,7 +106,6 @@ class Rtcm3:
 
         return head, numSats, numSignals, numCells
 
-
     def decodeRtcmMessage(self, message):
         def read_sat_data(header, obs_list):
             return [message.readlist(obs_list) for _ in range(header[4])]
@@ -302,7 +301,7 @@ class Rtcm3:
         1138: "Reserved MSM (Experimental)",
         1139: "Reserved MSM (Experimental)",
         1140: "Reserved MSM (Experimental)",
-        1230: "GLONASS L1 and L2 Code-Phase Biases"
+        1230: "GLONASS L1 and L2 Code-Phase Biases",
         # 4001-4095: "Proprietary Messages"
     }
 
@@ -311,26 +310,26 @@ class Rtcm3:
     __frameFormat = "bin:8, pad:6, uint:10"
 
     # GPS messages
-    __msg1001_4Head = "uint:12, uint:30, bool, " "uint:5, bool, bin:3"
+    __msg1001_4Head = "uint:12, uint:30, bool, uint:5, bool, bin:3"
     __msg1001Head = "uint:12, " + __msg1001_4Head
     __msg1002Head = "uint:12, " + __msg1001_4Head
     __msg1003Head = "uint:12, " + __msg1001_4Head
     __msg1004Head = "uint:12, " + __msg1001_4Head
-    __msg1001Obs = "uint:6, bool, uint:24, " "int:20, uint:7"
+    __msg1001Obs = "uint:6, bool, uint:24, int:20, uint:7"
     __msg1002Obs = __msg1001Obs + ", uint:8, uint:8"
-    __msg1003Obs = __msg1001Obs + ", bool, uint:24, " "int:20, uint:7"
+    __msg1003Obs = __msg1001Obs + ", bool, uint:24, int:20, uint:7"
     __msg1004Obs = __msg1002Obs + ", bin:2, int:14, int:20, uint:7, uint:8"
 
     # GLONASS messages
-    __msg1009_12Head = "uint:12, uint:27, bool, " "uint:5, bool, bin:3"
+    __msg1009_12Head = "uint:12, uint:27, bool, uint:5, bool, bin:3"
     __msg1009Head = "uint:12, " + __msg1009_12Head
     __msg1010Head = "uint:12, " + __msg1009_12Head
     __msg1011Head = "uint:12, " + __msg1009_12Head
     __msg1012Head = "uint:12, " + __msg1009_12Head
-    __msg1009Obs = "uint:6, bool, uint:5,  uint:24, " "int:20, uint:7"
+    __msg1009Obs = "uint:6, bool, uint:5,  uint:24, int:20, uint:7"
     __msg1010Obs = __msg1009Obs + ", uint:8, uint:8"
-    __msg1011Obs = __msg1009Obs + ", bool, uint:24, " "int:20, uint:7"
-    __msg1012Obs = __msg1010Obs + ", bool, uint:24, " "int:20, uint:7, " "uint:8"
+    __msg1011Obs = __msg1009Obs + ", bool, uint:24, int:20, uint:7"
+    __msg1012Obs = __msg1010Obs + ", bool, uint:24, int:20, uint:7, uint:8"
 
     # Coordinate messages
     __msg1005 = (
@@ -369,26 +368,26 @@ class Rtcm3:
         "bool, bool, bin:2, "
         "bin:12, bool, bool, "
         "uint:7, "
-        "bool, uint:23, " # intS24
-        "bool, uint:26, " # intS27
-        "bool, uint:4, " # intS5
-        "bool, uint:23, " # intS24
-        "bool, uint:26, " # intS27
-        "bool, uint:4, " # intS5
-        "bool, uint:23, " # intS24
-        "bool, uint:26, " # intS27
-        "bool, uint:4, " # intS5
+        "bool, uint:23, "  # intS24
+        "bool, uint:26, "  # intS27
+        "bool, uint:4, "  # intS5
+        "bool, uint:23, "  # intS24
+        "bool, uint:26, "  # intS27
+        "bool, uint:4, "  # intS5
+        "bool, uint:23, "  # intS24
+        "bool, uint:26, "  # intS27
+        "bool, uint:4, "  # intS5
         "bool, "
-        "bool, uint:11, " # intS11
+        "bool, uint:11, "  # intS11
         "bin:2, bool, "
-        "bool, uint:21, " # intS22
-        "bool, uint:4, " # intS5
+        "bool, uint:21, "  # intS22
+        "bool, uint:4, "  # intS5
         "uint:5, bool, uint:4, "
         "uint:11, bin:2, bool, "
         "uint:11, "
-        "bool, uint:31, " # intS32
+        "bool, uint:31, "  # intS32
         "uint:5, "
-        "bool, uint:21, " # intS22
+        "bool, uint:21, "  # intS22
         "bool, bin:7, "
     )
 
@@ -404,8 +403,6 @@ class Rtcm3:
         "int:24, int:10, int:10, "
         "bool"
     )
-
-
 
     __msg1045 = (
         "uint:12, uint:6, uint:12, "

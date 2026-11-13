@@ -29,18 +29,17 @@ class Mountpoint:
     def as_dict(self):
         return asdict(self)
 
+
 @dataclass
 class Caster:
     name: str = None
     casterId: int = None
     casterUrl: str = None
     user: str = None
-    password: str = field(default=None, repr = False)
+    password: str = field(default=None, repr=False)
     active: bool = False
     mountpoints: list[Mountpoint] = field(default_factory=list)
-
 
     @property
     def sitenames(self) -> list:
         return [site.mountpoint for site in self.mountpoints]
-
