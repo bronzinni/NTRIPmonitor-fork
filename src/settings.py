@@ -10,6 +10,7 @@ class DbSettings:
     password: str = None
     storeObservations: bool = None
 
+
 @dataclass
 class MultiprocessingSettings:
     multiprocessingActive: bool = True

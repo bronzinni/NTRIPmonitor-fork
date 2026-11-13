@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from time import gmtime, sleep, strftime, time
+from time import gmtime, strftime, time
 
 import asyncpg
 
@@ -11,27 +11,23 @@ from settings import DbSettings
 
 logger = logging.getLogger(__name__)
 
+
+# needs to be dealt with by context manager
 class DatabaseHandler:
-    def __init__(self, dbSettings = DbSettings):
+    def __init__(self, dbSettings=DbSettings):
         self.dbSettings = dbSettings
         self.pool = None
 
     async def initializePool(self):
-        while True:
-            try:
-                self.pool = await asyncpg.create_pool(
-                    user=self.dbSettings.user,
-                    password=self.dbSettings.password,
-                    host=self.dbSettings.host,
-                    port=self.dbSettings.port,
-                    database=self.dbSettings.database,
-                    min_size=1,  # Minimum number of connections in the pool
-                    max_size=20,  # Maximum number of connections in the pool
-                )
-                break
-            except Exception as error:
-                logger.error(f"Failed to create connection pool with: {error}.")
-                await asyncio.sleep(5)
+        self.pool = await asyncpg.create_pool(
+            user=self.dbSettings.user,
+            password=self.dbSettings.password,
+            host=self.dbSettings.host,
+            port=self.dbSettings.port,
+            database=self.dbSettings.database,
+            min_size=1,  # Minimum number of connections in the pool
+            max_size=20,  # Maximum number of connections in the pool
+        )
 
     async def closePool(self, timeout: float = 10):
         # Pool.close() waits forever for unreleased connections
@@ -44,7 +40,7 @@ class DatabaseHandler:
 
     async def getConnection(self):
         if not self.pool:
-            raise Exception("Connection pool is not initialized.")
+            raise ConnectionError("Connection pool is not initialized.")
         return await self.pool.acquire()
 
     async def releaseConnection(self, connection):
@@ -78,18 +74,22 @@ class DatabaseHandler:
                 dbConnection = await DatabaseHandler.dbConnect(dbSettings)
                 await dbConnection.close()
                 break
-            except Exception as error:
-                logger.info(f"Database connection is not yet open. Returns: {error}. Trying in {sleepTime} seconds...")
-                sleep(sleepTime)
-        logger.info("Database initialized.  the monitor system.")
+            except OSError as error:
+                logger.info(
+                    f"Database connection is not yet open. Returns: {error}. Trying in {sleepTime} seconds..."
+                )
+                await asyncio.sleep(sleepTime)
+        logger.info("Database initialized. Initializing the monitor system.")
+
 
 class DatabaseConnection:
     def __init__(self, dbSettings: DbSettings, sleepTime: int = 5, tries: int = 10):
-         self.dbSettings = dbSettings
-         self.sleepTime = sleepTime
-         self.tries = tries       
-        # FUTURE: we want a connection pool
-        # self.pool = None
+        self.dbSettings = dbSettings
+        self.sleepTime = sleepTime
+        self.tries = tries
+
+    # FUTURE: we want a connection pool
+    # self.pool = None
 
     async def __aenter__(self):
         fails = 0
@@ -97,7 +97,7 @@ class DatabaseConnection:
             try:
                 self.dbConnection = await DatabaseHandler.dbConnect(self.dbSettings)
                 break  # If the operation is successful break the loop
-            except Exception as error:
+            except ConnectionError as error:
                 fails += 1
                 logger.error(
                     f"""Failed ({fails}) to connect to database server:
@@ -107,10 +107,12 @@ class DatabaseConnection:
                 if fails >= self.tries:
                     raise ConnectionError
                 await asyncio.sleep(self.sleepTime)
-        logger.info(f"Connected to database: {self.dbSettings.database}@{self.dbSettings.host}.")
+        logger.info(
+            f"Connected to database: {self.dbSettings.database}@{self.dbSettings.host}."
+        )
 
         return self
-    
+
     async def fetchval(self, query: str, json_string: str):
         return await self.dbConnection.fetchval(query, json_string)
 
@@ -120,23 +122,20 @@ class DatabaseConnection:
     async def __aexit__(self, exc_t, exc_v, exc_tb):
         await self.dbConnection.close()
 
+
 class NtripObservationHandler(DatabaseHandler):
     INPUTTABLE = {
         1001: "insert_observations",
         1002: "insert_observations",
         1003: "insert_observations",
         1004: "insert_observations",
-
         1005: "upsert_coordinates",
         1006: "upsert_coordinates",
-
         1009: "insert_observations",
         1010: "insert_observations",
         1011: "insert_observations",
         1012: "insert_observations",
-
         1019: "insert_ephemerides_GPS",
-
         1071: "insert_observations",
         1072: "insert_observations",
         1073: "insert_observations",
@@ -144,7 +143,6 @@ class NtripObservationHandler(DatabaseHandler):
         1075: "insert_observations",
         1076: "insert_observations",
         1077: "insert_observations",
-
         1081: "insert_observations",
         1082: "insert_observations",
         1083: "insert_observations",
@@ -152,7 +150,6 @@ class NtripObservationHandler(DatabaseHandler):
         1085: "insert_observations",
         1086: "insert_observations",
         1087: "insert_observations",
-
         1091: "insert_observations",
         1092: "insert_observations",
         1093: "insert_observations",
@@ -160,7 +157,6 @@ class NtripObservationHandler(DatabaseHandler):
         1095: "insert_observations",
         1096: "insert_observations",
         1097: "insert_observations",
-
         1101: "insert_observations",
         1102: "insert_observations",
         1103: "insert_observations",
@@ -168,7 +164,6 @@ class NtripObservationHandler(DatabaseHandler):
         1105: "insert_observations",
         1106: "insert_observations",
         1107: "insert_observations",
-
         1111: "insert_observations",
         1112: "insert_observations",
         1113: "insert_observations",
@@ -176,7 +171,6 @@ class NtripObservationHandler(DatabaseHandler):
         1115: "insert_observations",
         1116: "insert_observations",
         1117: "insert_observations",
-
         1121: "insert_observations",
         1122: "insert_observations",
         1123: "insert_observations",
@@ -186,7 +180,7 @@ class NtripObservationHandler(DatabaseHandler):
         1127: "insert_observations",
     }
 
-    def __init__(self, dbSettings = DbSettings):
+    def __init__(self, dbSettings=DbSettings):
         super().__init__(dbSettings)
 
     async def grabStoredProcedure(msgType: int):
@@ -199,18 +193,17 @@ class NtripObservationHandler(DatabaseHandler):
             if decodedObsFrame is None:
                 continue
             rtcmId = rtcmPackageIds[index]
-            try:
-                decodedObsFrame = [(rtcmId, *obsFrame) for obsFrame in decodedObsFrame]
-            except Exception as error:
-                logger.error(
-                    f"Error frame in iterable: {error} with frame {decodedObsFrame}"
-                )
+
+            decodedObsFrame = [(rtcmId, *obsFrame) for obsFrame in decodedObsFrame]
+
             try:
                 decodedObsFrameJson = json.dumps(decodedObsFrame)
                 connection = await self.getConnection()
                 try:
-                    stored_procedure = await NtripObservationHandler.grabStoredProcedure(
-                        decodedFrames[index]['msg_type']
+                    stored_procedure = (
+                        await NtripObservationHandler.grabStoredProcedure(
+                            decodedFrames[index]["msg_type"]
+                        )
                     )
                     if stored_procedure is None:
                         logger.error(
@@ -223,7 +216,7 @@ class NtripObservationHandler(DatabaseHandler):
                     await connection.execute(query, decodedObsFrameJson)
                 finally:
                     await self.releaseConnection(connection)
-            except Exception as error:
+            except ConnectionError as error:
                 logger.error(f"Database handling of frame: {decodedObsFrame}")
                 logger.error(f"rtcmId: {rtcmId}")
                 logger.error(
@@ -241,7 +234,7 @@ class NtripObservationHandler(DatabaseHandler):
                 )
             finally:
                 await self.releaseConnection(connection)
-        except Exception as error:
+        except ConnectionError as error:
             logger.error(
                 f"Failed to insert and commit RTCM data to database with: {error}."
             )
@@ -265,9 +258,7 @@ class NtripObservationHandler(DatabaseHandler):
                     "RTCM package IDs returned None. Not storing observations."
                 )
         except Exception as error:
-            logger.error(
-                f"Failed to insert and commit data to database with: {error}."
-            )
+            logger.error(f"Failed to insert and commit data to database with: {error}.")
 
 
 class NtripLogHandler(DatabaseHandler):

@@ -59,10 +59,11 @@ def touchHeartbeat(path: str) -> None:
         pass
     os.utime(path)
 
+
 class SignalHandler:
     """Signal handler for graceful shutdown"""
 
-    def __init__(self, loop, processes = list[Process]):
+    def __init__(self, loop, processes=list[Process]):
         self.loop = loop
         self.processes = processes
         self.exitCode = 0
@@ -111,7 +112,7 @@ async def watchdogHandler(
 
             await asyncio.sleep(30)  # Sleep for 30 seconds
     except asyncio.CancelledError:
-        logger.debug(f"Watchdog on loop {id(asyncio.get_running_loop())} closed.") 
+        logger.debug(f"Watchdog on loop {id(asyncio.get_running_loop())} closed.")
 
 
 def clearList(sharedList):
@@ -149,13 +150,9 @@ async def decodeInsertConsumer(
                 f"{dbSettings.database}@{dbSettings.host} "
                 f"with error: {error}"
             )
-            logger.error(
-                f"Will retry database connection in {sleepTime} seconds!"
-            )
+            logger.error(f"Will retry database connection in {sleepTime} seconds!")
             await asyncio.sleep(sleepTime)
-    logger.info(
-        f"Connected to database: {dbSettings.database}@{dbSettings.host}."
-    )
+    logger.info(f"Connected to database: {dbSettings.database}@{dbSettings.host}.")
     try:
         while not pipe_read.poll():
             await asyncio.sleep(checkInterval)
@@ -180,9 +177,7 @@ async def decodeInsertConsumer(
                         ) = await decoderclasses.Decoder.batchDecodeFrame(
                             encodedFrames, dbSettings.storeObservations, rtcmMessage
                         )
-                        await dBHandler.dbInsertBatch(
-                            decodedFrames, decodedObs
-                        )
+                        await dBHandler.dbInsertBatch(decodedFrames, decodedObs)
                     except Exception as error:
                         logger.error(
                             f"An error occurred while batch decoding or batch inserting: {error}"
@@ -192,9 +187,11 @@ async def decodeInsertConsumer(
     finally:
         if dBHandler:
             await dBHandler.closePool()
-        
-        logger.debug(f"decodeInsertConsumer on loop {id(asyncio.get_running_loop())} done.")
-            
+
+        logger.debug(
+            f"decodeInsertConsumer on loop {id(asyncio.get_running_loop())} done."
+        )
+
 
 def mountpointSplitter(casterSettingsDict: dict, maxProcesses: int) -> list:
     """
@@ -209,7 +206,9 @@ def mountpointSplitter(casterSettingsDict: dict, maxProcesses: int) -> list:
         list: list of lists of Mountpoint instances
     """
 
-    total_mountpoints = sum([len(caster.mountpoints) for caster in casterSettingsDict.values()])
+    total_mountpoints = sum(
+        [len(caster.mountpoints) for caster in casterSettingsDict.values()]
+    )
     mountpoints_per_proc = total_mountpoints // maxProcesses + 1
 
     chunks = []
@@ -221,12 +220,22 @@ def mountpointSplitter(casterSettingsDict: dict, maxProcesses: int) -> list:
         remaining_in_caster = len(caster.mountpoints)
         while remaining_in_caster > 0:
             if space_in_chunk > remaining_in_caster:
-                chunk = chunk + caster.mountpoints[position_in_caster:position_in_caster + remaining_in_caster]
+                chunk = (
+                    chunk
+                    + caster.mountpoints[
+                        position_in_caster : position_in_caster + remaining_in_caster
+                    ]
+                )
                 space_in_chunk = space_in_chunk - remaining_in_caster
                 position_in_caster = position_in_caster + remaining_in_caster
                 remaining_in_caster = 0
             if space_in_chunk <= remaining_in_caster:
-                chunk = chunk + caster.mountpoints[position_in_caster:position_in_caster + space_in_chunk]
+                chunk = (
+                    chunk
+                    + caster.mountpoints[
+                        position_in_caster : position_in_caster + space_in_chunk
+                    ]
+                )
                 chunks.append(chunk)
                 chunk = []
                 space_in_chunk = mountpoints_per_proc
@@ -258,7 +267,10 @@ async def periodicFrameAppender(
         await asyncio.sleep(
             checkInterval
         )  # Wait for a short period to avoid hogging the CPU
-        if encodedFrames and (time() - encodedFrames[-1]["time_received"]) > checkInterval:
+        if (
+            encodedFrames
+            and (time() - encodedFrames[-1]["time_received"]) > checkInterval
+        ):
             try:
                 await appendToList(encodedFrames[:], sharedEncoded, lock)
                 # logger.debug(
@@ -269,9 +281,10 @@ async def periodicFrameAppender(
                 logger.error(
                     f"An error occurred in periodic check for appending frames: {error}"
                 )
-    
-    logger.debug(f"periodicFrameAppender on loop {id(asyncio.get_running_loop())} closed.")
 
+    logger.debug(
+        f"periodicFrameAppender on loop {id(asyncio.get_running_loop())} closed."
+    )
 
 
 async def procRtcmStream(
@@ -328,6 +341,7 @@ async def procRtcmStream(
         await asyncio.sleep(0.5)
     logger.info(f"{mountPoint.mountpoint}: Closed connection.")
 
+
 async def rtcmStreamTasks(
     casterSettingsDict: dict,
     dbSettings: DbSettings,
@@ -364,7 +378,9 @@ async def rtcmStreamTasks(
             touchHeartbeat(heartbeatPath)
             lastHeartbeat = time()
         await asyncio.sleep(1)
-    logger.debug(f"Reader process on loop {id(asyncio.get_running_loop())} received shutdown signal.")
+    logger.debug(
+        f"Reader process on loop {id(asyncio.get_running_loop())} received shutdown signal."
+    )
     global INIT_GRACEFUL_SHUTDOWN
     INIT_GRACEFUL_SHUTDOWN = True
     tasks["watchdog"].cancel()
@@ -372,14 +388,13 @@ async def rtcmStreamTasks(
     # Wait for each task to complete
     await asyncio.gather(*tasks.values())
 
-# def reduceCasterDict(casterSettingsDict: dict, casterStatus: list) -> dict:
-#     reducedCasterSettingsDict = {}
-#     for caster, status in zip(casterSettingsDict.keys(), casterStatus):
-#         if status == 1:
-#             reducedCasterSettingsDict[caster] = casterSettingsDict[caster]
-#     return reducedCasterSettingsDict
+    # def reduceCasterDict(casterSettingsDict: dict, casterStatus: list) -> dict:
+    #     reducedCasterSettingsDict = {}
+    #     for caster, status in zip(casterSettingsDict.keys(), casterStatus):
+    #         if status == 1:
+    #             reducedCasterSettingsDict[caster] = casterSettingsDict[caster]
+    #     return reducedCasterSettingsDict
     logger.debug(f"Reader process on loop {id(asyncio.get_running_loop())} done.")
-
 
 
 async def downloadSourceTable(
@@ -393,9 +408,6 @@ async def downloadSourceTable(
     """
     # Create an instance of NtripClients
     ntripclient = NtripClients()
-    mountpoints = []
-    # replaced with CasterSettings attribute active
-    # casterStatus = [0] * len(casterSettingsDict)  # Initialize the list with zeros
 
     for caster, casterSettings in casterSettingsDict.items():
         logger.info(
@@ -421,7 +433,7 @@ async def downloadSourceTable(
                 )
                 await asyncio.sleep(sleepTime)
                 # If fail is greater than retry (default value 3), break the loop
-                if (fail > retry):
+                if fail > retry:
                     logger.info(
                         f"Attempted to connect to {casterSettings.casterUrl} {retry} times without success. Skipping caster."
                     )
@@ -430,7 +442,10 @@ async def downloadSourceTable(
             async with DatabaseConnection(dbSettings) as connection:
                 try:
                     casterId = await connection.fetchval(
-                        "SELECT insert_caster($1::json)", json.dumps([caster, casterSettings.casterUrl, casterSettings.user])
+                        "SELECT insert_caster($1::json)",
+                        json.dumps(
+                            [caster, casterSettings.casterUrl, casterSettings.user]
+                        ),
                     )
                     casterSettings.casterId = casterId
                     casterSettings.active = True
@@ -438,15 +453,22 @@ async def downloadSourceTable(
                         f"Inserted {caster} into the database with id {casterId}. Gathering info on {casterSettings.mountpoints}"
                     )
                 except Exception as exc:
-                    logger.error(f"Failed to write caster {caster} to database: {exc}. Skipping")
+                    logger.error(
+                        f"Failed to write caster {caster} to database: {exc}. Skipping"
+                    )
                     continue
-                
+
                 try:
                     # collect information from source table
                     for row in sourceTable:
                         sourceCols = row.split(sep=";")
-                        if sourceCols[0] == "STR" and sourceCols[1] in casterSettings.sitenames:
-                            mountpoint = casterSettings.mountpoints[casterSettings.sitenames.index(sourceCols[1])]
+                        if (
+                            sourceCols[0] == "STR"
+                            and sourceCols[1] in casterSettings.sitenames
+                        ):
+                            mountpoint = casterSettings.mountpoints[
+                                casterSettings.sitenames.index(sourceCols[1])
+                            ]
 
                             mountpoint.identifier = sourceCols[2]
                             mountpoint.format = sourceCols[3]
@@ -461,13 +483,15 @@ async def downloadSourceTable(
                             mountpoint.solution = int(sourceCols[12])
                             mountpoint.generator = sourceCols[13]
                             mountpoint.compr_encryp = sourceCols[14]
-                            mountpoint.authentication = sourceCols[15]  
+                            mountpoint.authentication = sourceCols[15]
                             mountpoint.fee = sourceCols[16]
                             mountpoint.bitrate = int(sourceCols[17])
                             mountpoint.misc = sourceCols[18]
 
                 except Exception as exc:
-                    logger.error(f"Failed to read source table information {exc}. Continuing without details.")
+                    logger.error(
+                        f"Failed to read source table information {exc}. Continuing without details."
+                    )
 
                 try:
                     # prepare list of dictionaries for database insertion of mountpoints
@@ -476,17 +500,17 @@ async def downloadSourceTable(
                         mountpoint.caster_id = casterSettings.casterId
                         mountpoint.caster = casterSettings.name
 
-                        json_table.append(
-                            mountpoint.as_dict()
-                        )
-                        
+                        json_table.append(mountpoint.as_dict())
+
                     mountpointJson = json.dumps(json_table)
                     mountpoint_ids = await connection.fetchval(
                         "SELECT insert_mountpoints($1::json)",
                         mountpointJson,
                     )
 
-                    for mountpoint_id, mountpoint in zip(mountpoint_ids, casterSettings.mountpoints):
+                    for mountpoint_id, mountpoint in zip(
+                        mountpoint_ids, casterSettings.mountpoints
+                    ):
                         mountpoint.mountpoint_id = mountpoint_id
                     logger.debug(
                         f"Inserted {len(casterSettings.mountpoints)} mountpoints metadata into the database with ids {mountpoint_ids}."
@@ -510,9 +534,9 @@ async def periodicSourceTableRefresh(
 
 
 def load_connections():
-    with open('./conf/connections.json', 'r') as f:
+    with open("./conf/connections.json", "r") as f:
         connections = json.load(f)
-    
+
     casterSettingsDict = {}
 
     for connection in connections:
@@ -523,13 +547,15 @@ def load_connections():
             caster.user = connection["auth"]["username"]
             caster.password = connection["auth"]["password"]
 
-            caster.mountpoints = [Mountpoint(mountpoint["name"]) for mountpoint in connection["mountpoints"] if mountpoint["enabled"] == True]
+            caster.mountpoints = [
+                Mountpoint(mountpoint["name"])
+                for mountpoint in connection["mountpoints"]
+                if mountpoint["enabled"] == True
+            ]
 
             casterSettingsDict[caster.name] = caster
 
     return casterSettingsDict
-
-
 
 
 def loadDbSettings():
@@ -542,6 +568,7 @@ def loadDbSettings():
     dbSettings.storeObservations = os.getenv("DB_STORE_OBSERVATIONS") == "True"
 
     return dbSettings
+
 
 def loadMultiProcessingSettings():
     processingSettings = MultiprocessingSettings()
@@ -560,6 +587,7 @@ def loadMultiProcessingSettings():
     processingSettings.sourcetableRefresh = int(os.getenv("SOURCETABLE_REFRESH", "600"))
 
     return processingSettings
+
 
 def initializationLogger(
     casterSettingsDict,
@@ -643,7 +671,9 @@ class parallelProcess:
 
     def start(self) -> None:
         if self.process.is_alive():
-            logger.info(f"Restarting process {self.process.name}, pid {self.process.pid}.")
+            logger.info(
+                f"Restarting process {self.process.name}, pid {self.process.pid}."
+            )
             self.process.close()
 
         self.process.start()
@@ -744,7 +774,9 @@ def RunMultiProcessing(
     mountpointChunks = mountpointSplitter(
         casterSettingsDict, processingSettings.maxReaders
     )
-    logger.info(f"Mountpoint chunks: {[[x.mountpoint for x in liste] for liste in mountpointChunks]}")
+    logger.info(
+        f"Mountpoint chunks: {[[x.mountpoint for x in liste] for liste in mountpointChunks]}"
+    )
     numberReaders = min(processingSettings.maxReaders, len(mountpointChunks))
     numberDecoders = math.ceil(numberReaders // processingSettings.readersPerDecoder)
 
@@ -764,9 +796,7 @@ def RunMultiProcessing(
                 lock,
                 os.path.join(HEARTBEAT_DIR, f"ntripmonitor-reader-{i}"),
             )
-            logger.info(
-                f"Starting {readingProcess}."
-            )
+            logger.info(f"Starting {readingProcess}.")
             readingProcesses.append(readingProcess)
 
         decoderProcesses = []
@@ -802,8 +832,8 @@ def RunMultiProcessing(
         #                 f"Restarting process {proc} {proc.process} with un-expected exit_code {exitcode}."
         #             )
         #             proc.start()
-        
-        # here we set up a main asyncio loop, which takes care of signal handling and passing on 
+
+        # here we set up a main asyncio loop, which takes care of signal handling and passing on
         loop = asyncio.new_event_loop()
         signal_handler = SignalHandler(loop, readingProcesses + decoderProcesses)
         loop.create_task(childWatcher(readingProcesses + decoderProcesses, signal_handler))
@@ -830,7 +860,6 @@ def RunMultiProcessing(
 
         logger.info("Goodbye!")
     return signal_handler.exitCode
-
 
 
 def main(
@@ -861,22 +890,19 @@ def main(
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(
-            downloadSourceTable(casterSettingsDict, dbSettings)
-        )
+        loop.run_until_complete(downloadSourceTable(casterSettingsDict, dbSettings))
     except Exception as error:
-        logger.error(
-            f"Failed to retrieve source tables: {error}.")
-
+        logger.error(f"Failed to retrieve source tables: {error}.")
 
     # reduce caster dictionary to contain only active casters
     # casterSettingsDict = reduceCasterDict(casterSettingsDict, casterStatus)
 
-    casterSettingsDict = {key: caster for key, caster in casterSettingsDict.items() if caster.active}
+    casterSettingsDict = {
+        key: caster for key, caster in casterSettingsDict.items() if caster.active
+    }
     logger.debug(casterSettingsDict)
 
     sys.exit(RunMultiProcessing(casterSettingsDict, dbSettings, processingSettings))
-
 
 # This code is only executed if the script is run directly
 if __name__ == "__main__":
@@ -930,9 +956,7 @@ if __name__ == "__main__":
             format=logformat,
         )
     else:
-        logging.basicConfig(
-            level=logLevel, format=logformat
-        )
+        logging.basicConfig(level=logLevel, format=logformat)
 
     load_dotenv()
     # casterSettingsDict contains the Caster instances (dataclass) for all casters
