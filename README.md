@@ -148,6 +148,7 @@ The number of cores the system will use is set in the environment file.
 - **READERS_PER_DECODER** - INTEGER: How many reader processes should share a decoder process. Each decoder is granted a CPU core, if adequate resources are available.
 - **CLEAR_CHECK** - FLOAT: The time interval at which each decoder process will check the shared memory for new data entries.
 - **APPEND_CHECK** - FLOAT: The time interval each reader process will append to the shared memory when receiving data.
+- **SOURCETABLE_REFRESH** - INTEGER: Seconds between re-reads of the caster sourcetables, so mountpoints that come online after start appear in the dashboards. Default 600; 0 reads the sourcetables at start only.
 - **INGEST_CPU** - FLOAT: Number of CPU the application has access to. The application will not block other applications from using the allocated CPU's, but the application may, if required at times, use this amount of CPU's.
 - **INGEST_MEMORY** - INTEGER + GB : The amount of memory the application has access to. Similar to the CPU, the application will not block other applications from using the allocated memory, but the application may, if required at times, use this amount of memory.
 ### Multiprocessing - Reading processes
@@ -178,6 +179,9 @@ The decoder process in simple terms:
 - Each dataentry is decoded and assigned a table string.
 - The data is packed in a JSON format and sent to the database through a stored procedure. The stored procedures to use is determined by the table string. 
 - Repeat
+
+### Multiprocessing - Health and restarts
+Every reader and decoder process touches a heartbeat file in `HEARTBEAT_DIR` (default `/tmp`) every 30 seconds from its event loop. The main process checks them every 30 seconds. If a child has exited, or its heartbeat is older than `HEARTBEAT_TIMEOUT` seconds (default 300), the main process shuts down the rest and exits with code 1, so the container restarts with all processes. While all children are fine, the main process touches `ntripmonitor-alive` in the same directory, which [src/healthcheck.py](src/healthcheck.py) checks as a liveness probe (`python3 /app/healthcheck.py [max age, default 120]`).
 
 ## Disconnect/Reconnect log handling
 Disconnects and reconnects of individual mountpoints are currently handled in the [src/databasehandling.py](NtripLogHandler) class.
