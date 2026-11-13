@@ -516,7 +516,9 @@ async def downloadSourceTable(
                         f"Inserted {len(casterSettings.mountpoints)} mountpoints metadata into the database with ids {mountpoint_ids}."
                     )
                 except Exception as exc:
-                    logger.error(f"Failed to write mountpoints {casterSettings.mountpoints} to database: {exc}.")
+                    logger.error(
+                        f"Failed to write mountpoints {casterSettings.mountpoints} to database: {exc}."
+                    )
 
 
 async def periodicSourceTableRefresh(
@@ -530,7 +532,9 @@ async def periodicSourceTableRefresh(
         try:
             await downloadSourceTable(casterSettingsDict, dbSettings)
         except Exception as error:
-            logger.error(f"Sourcetable refresh failed, retrying in {interval} s: {error}")
+            logger.error(
+                f"Sourcetable refresh failed, retrying in {interval} s: {error}"
+            )
 
 
 def load_connections():
@@ -721,7 +725,9 @@ class readerProcess(parallelProcess):
 
 
 class decoderProcess(parallelProcess):
-    def __init__(self, dbSettings: DbSettings, sharedEncoded, lock: Lock, heartbeatPath: str):
+    def __init__(
+        self, dbSettings: DbSettings, sharedEncoded, lock: Lock, heartbeatPath: str
+    ):
         super().__init__()
         self.heartbeatPath = heartbeatPath
         self.database = dbSettings
@@ -731,12 +737,17 @@ class decoderProcess(parallelProcess):
     def run(self):
         asyncio.run(
             decodeInsertConsumer(
-                self.shared, self.database, self.lock, self.pipe_read, self.heartbeatPath
+                self.shared,
+                self.database,
+                self.lock,
+                self.pipe_read,
+                self.heartbeatPath,
             )
         )
 
     def __repr__(self):
         return f"Decoder ({self.process.name}, pid {self.process.pid}) with shared memory {hex(id(self.shared))}"
+
 
 async def childWatcher(
     processes: list[parallelProcess], signalHandler: SignalHandler
@@ -836,11 +847,15 @@ def RunMultiProcessing(
         # here we set up a main asyncio loop, which takes care of signal handling and passing on
         loop = asyncio.new_event_loop()
         signal_handler = SignalHandler(loop, readingProcesses + decoderProcesses)
-        loop.create_task(childWatcher(readingProcesses + decoderProcesses, signal_handler))
+        loop.create_task(
+            childWatcher(readingProcesses + decoderProcesses, signal_handler)
+        )
         if processingSettings.sourcetableRefresh > 0:
             loop.create_task(
                 periodicSourceTableRefresh(
-                    casterSettingsDict, dbSettings, processingSettings.sourcetableRefresh
+                    casterSettingsDict,
+                    dbSettings,
+                    processingSettings.sourcetableRefresh,
                 )
             )
         # we run forever until the process is interrupted/killed from OS
@@ -903,6 +918,7 @@ def main(
     logger.debug(casterSettingsDict)
 
     sys.exit(RunMultiProcessing(casterSettingsDict, dbSettings, processingSettings))
+
 
 # This code is only executed if the script is run directly
 if __name__ == "__main__":

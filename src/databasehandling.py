@@ -282,7 +282,9 @@ class NtripLogHandler(DatabaseHandler):
                     json.dumps([self.mountpoint, disconnect_time]),
                 )
         except Exception as error:
-            logging.error(f"{self.mountpoint}: Could not insert disconnect log: {error!r}")
+            logging.error(
+                f"{self.mountpoint}: Could not insert disconnect log: {error!r}"
+            )
 
     async def update_reconnect_log(self):
         timestamp = time()
@@ -297,7 +299,9 @@ class NtripLogHandler(DatabaseHandler):
                     json.dumps([self.disconnect_id, reconnect_time]),
                 )
         except Exception as error:
-            logging.error(f"{self.mountpoint}: Could not update reconnect log: {error!r}")
+            logging.error(
+                f"{self.mountpoint}: Could not update reconnect log: {error!r}"
+            )
         self.disconnect_id = None
 
     async def requestStream(
